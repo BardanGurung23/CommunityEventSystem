@@ -14,62 +14,80 @@
     <div class="alert @messageClass">@message</div>
 }
 
-<EditForm Model="eventModel" OnValidSubmit="SaveEvent" class="card mb-4">
-    <DataAnnotationsValidator />
-    <div class="card-body">
-        <h2 class="h5">Add event</h2>
-        <ValidationSummary />
-        <div class="row g-3">
-            <div class="col-md-6">
-                <label class="form-label" for="eventName">Event name</label>
-                <InputText id="eventName" class="form-control" @bind-Value="eventModel.EventName" />
+<div class="page-actions mb-3">
+    <button class="btn btn-primary" type="button" @onclick="OpenAddEventDialog">Add event</button>
+</div>
+
+@if (showEventDialog)
+{
+    <div class="dialog-backdrop" @onclick="CloseEventDialog">
+        <section class="dialog-panel event-dialog" role="dialog" aria-modal="true" aria-labelledby="eventDialogTitle" @onclick:stopPropagation="true">
+            <div class="dialog-header">
+                <div>
+                    <p class="eyebrow mb-1">Admin</p>
+                    <h2 id="eventDialogTitle">@(IsEditing ? "Edit Event" : "Add Event")</h2>
+                </div>
+                <button class="dialog-close" type="button" @onclick="CloseEventDialog" aria-label="Close dialog">x</button>
             </div>
-            <div class="col-md-3">
-                <label class="form-label" for="eventDate">Date</label>
-                <InputDate id="eventDate" class="form-control" @bind-Value="eventModel.EventDate" />
-            </div>
-            <div class="col-md-3">
-                <label class="form-label" for="maxParticipants">Max participants</label>
-                <InputNumber id="maxParticipants" class="form-control" @bind-Value="eventModel.MaxParticipants" />
-            </div>
-            <div class="col-md-3">
-                <label class="form-label" for="startTime">Start time</label>
-                <InputText id="startTime" class="form-control" @bind-Value="startTimeText" />
-            </div>
-            <div class="col-md-3">
-                <label class="form-label" for="endTime">End time</label>
-                <InputText id="endTime" class="form-control" @bind-Value="endTimeText" />
-            </div>
-            <div class="col-md-3">
-                <label class="form-label" for="venue">Venue</label>
-                <select id="venue" class="form-select" @bind="selectedVenueId">
-                    <option value="0">Choose venue</option>
-                    @foreach (var venue in venues.Where(venue => venue.IsAvailable))
-                    {
-                        <option value="@venue.Id">@venue.VenueName</option>
-                    }
-                </select>
-            </div>
-            <div class="col-md-3">
-                <label class="form-label" for="activity">Activity</label>
-                <select id="activity" class="form-select" @bind="selectedActivityId">
-                    <option value="0">Choose activity</option>
-                    @foreach (var activity in activities.Where(activity => activity.IsActive))
-                    {
-                        <option value="@activity.Id">@activity.ActivityName</option>
-                    }
-                </select>
-            </div>
-            <div class="col-12">
-                <label class="form-label" for="eventDescription">Description</label>
-                <InputTextArea id="eventDescription" class="form-control" @bind-Value="eventModel.Description" />
-            </div>
-        </div>
+
+            <EditForm Model="eventModel" OnValidSubmit="SaveEvent" class="dialog-form">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label" for="eventName">Event name</label>
+                        <InputText id="eventName" class="form-control" @bind-Value="eventModel.EventName" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label" for="eventDate">Date</label>
+                        <InputDate id="eventDate" class="form-control" @bind-Value="eventModel.EventDate" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label" for="maxParticipants">Max participants</label>
+                        <InputNumber id="maxParticipants" class="form-control" @bind-Value="eventModel.MaxParticipants" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label" for="startTime">Start time</label>
+                        <InputText id="startTime" class="form-control" @bind-Value="startTimeText" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label" for="endTime">End time</label>
+                        <InputText id="endTime" class="form-control" @bind-Value="endTimeText" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label" for="venue">Venue</label>
+                        <select id="venue" class="form-select" @bind="selectedVenueId">
+                            <option value="0">Choose venue</option>
+                            @foreach (var venue in venues.Where(venue => venue.IsAvailable || venue.Id == selectedVenueId))
+                            {
+                                <option value="@venue.Id">@venue.VenueName</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label" for="activity">Activity</label>
+                        <select id="activity" class="form-select" @bind="selectedActivityId">
+                            <option value="0">Choose activity</option>
+                            @foreach (var activity in activities.Where(activity => activity.IsActive || activity.Id == selectedActivityId))
+                            {
+                                <option value="@activity.Id">@activity.ActivityName</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label" for="eventDescription">Description</label>
+                        <InputTextArea id="eventDescription" class="form-control" @bind-Value="eventModel.Description" />
+                    </div>
+                </div>
+
+                <div class="dialog-actions">
+                    <button class="btn btn-outline-secondary" type="button" @onclick="CloseEventDialog">Cancel</button>
+                    <button class="btn btn-primary" type="submit">@(IsEditing ? "Save changes" : "Save event")</button>
+                </div>
+            </EditForm>
+        </section>
     </div>
-    <div class="card-footer bg-white">
-        <button class="btn btn-primary" type="submit">Save event</button>
-    </div>
-</EditForm>
+}
 
 <table class="table table-striped align-middle">
     <thead>
@@ -93,7 +111,7 @@
             <td>@(item.IsActive ? "Active" : "Inactive")</td>
             <td class="text-end">
                 <a class="btn btn-sm btn-outline-primary me-2" href="@($"/admin/events/details/{item.Id}")">Details</a>
-                <a class="btn btn-sm btn-outline-secondary me-2" href="@($"/admin/events/edit/{item.Id}")">Edit</a>
+                <button class="btn btn-sm btn-outline-secondary me-2" type="button" @onclick="() => OpenEditEventDialog(item.Id)">Edit</button>
                 <button class="btn btn-sm btn-outline-danger" @onclick="() => Deactivate(item.Id)" disabled="@(!item.IsActive)">Deactivate</button>
             </td>
         </tr>
@@ -112,6 +130,9 @@
     private string endTimeText = "10:00";
     private string message = string.Empty;
     private string messageClass = "alert-success";
+    private bool showEventDialog;
+    private int? editingEventId;
+    private bool IsEditing => editingEventId.HasValue;
 
     protected override async Task OnInitializedAsync()
     {
@@ -128,14 +149,20 @@
             var venueIds = selectedVenueId > 0 ? new[] { selectedVenueId } : Array.Empty<int>();
             var activityIds = selectedActivityId > 0 ? new[] { selectedActivityId } : Array.Empty<int>();
 
-            await EventService.AddEventAsync(eventModel, venueIds, activityIds);
-            eventModel = NewEvent();
-            selectedVenueId = 0;
-            selectedActivityId = 0;
-            startTimeText = "09:00";
-            endTimeText = "10:00";
-            message = "Event saved.";
+            if (IsEditing)
+            {
+                await EventService.UpdateEventAsync(eventModel, venueIds, activityIds);
+                message = "Event updated.";
+            }
+            else
+            {
+                await EventService.AddEventAsync(eventModel, venueIds, activityIds);
+                message = "Event saved.";
+            }
+
+            ResetEventForm();
             messageClass = "alert-success";
+            showEventDialog = false;
             await LoadData();
         }
         catch (Exception ex)
@@ -149,6 +176,61 @@
     {
         await EventService.DeactivateEventAsync(id);
         await LoadData();
+    }
+
+    private void OpenAddEventDialog()
+    {
+        ResetEventForm();
+        message = string.Empty;
+        showEventDialog = true;
+    }
+
+    private async Task OpenEditEventDialog(int id)
+    {
+        var existingEvent = await EventService.GetEventByIdAsync(id);
+        if (existingEvent is null)
+        {
+            message = "Event not found.";
+            messageClass = "alert-danger";
+            return;
+        }
+
+        editingEventId = id;
+        eventModel = new Event
+        {
+            Id = existingEvent.Id,
+            EventName = existingEvent.EventName,
+            EventDate = existingEvent.EventDate,
+            StartTime = existingEvent.StartTime,
+            EndTime = existingEvent.EndTime,
+            Description = existingEvent.Description,
+            MaxParticipants = existingEvent.MaxParticipants,
+            CreatedAt = existingEvent.CreatedAt,
+            UpdatedAt = existingEvent.UpdatedAt,
+            IsActive = existingEvent.IsActive
+        };
+        selectedVenueId = existingEvent.EventVenues.FirstOrDefault()?.VenueId ?? 0;
+        selectedActivityId = existingEvent.EventActivities.FirstOrDefault()?.ActivityId ?? 0;
+        startTimeText = existingEvent.StartTime.ToString(@"hh\:mm");
+        endTimeText = existingEvent.EndTime.ToString(@"hh\:mm");
+        message = string.Empty;
+        showEventDialog = true;
+    }
+
+    private void CloseEventDialog()
+    {
+        showEventDialog = false;
+        ResetEventForm();
+    }
+
+    private void ResetEventForm()
+    {
+        eventModel = NewEvent();
+        editingEventId = null;
+        selectedVenueId = 0;
+        selectedActivityId = 0;
+        startTimeText = "09:00";
+        endTimeText = "10:00";
     }
 
     private async Task LoadData()

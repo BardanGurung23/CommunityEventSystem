@@ -7,30 +7,63 @@
 
 <h1>Manage Participants</h1>
 
-<EditForm Model="participant" OnValidSubmit="SaveParticipant" class="card mb-4">
-    <DataAnnotationsValidator />
-    <div class="card-body">
-        <h2 class="h5">Add participant</h2>
-        <ValidationSummary />
-        <div class="row g-3">
-            <div class="col-md-4">
-                <label class="form-label" for="fullName">Full name</label>
-                <InputText id="fullName" class="form-control" @bind-Value="participant.FullName" />
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <div class="alert @messageClass">@message</div>
+}
+
+<div class="page-actions mb-3">
+    <button class="btn btn-primary" type="button" @onclick="OpenAddParticipantDialog">Add participant</button>
+</div>
+
+@if (showParticipantDialog)
+{
+    <div class="dialog-backdrop" @onclick="CloseParticipantDialog">
+        <section class="dialog-panel" role="dialog" aria-modal="true" aria-labelledby="participantDialogTitle" @onclick:stopPropagation="true">
+            <div class="dialog-header">
+                <div>
+                    <p class="eyebrow mb-1">Admin</p>
+                    <h2 id="participantDialogTitle">@(IsEditing ? "Edit Participant" : "Add Participant")</h2>
+                </div>
+                <button class="dialog-close" type="button" @onclick="CloseParticipantDialog" aria-label="Close dialog">x</button>
             </div>
-            <div class="col-md-4">
-                <label class="form-label" for="email">Email</label>
-                <InputText id="email" class="form-control" @bind-Value="participant.Email" />
-            </div>
-            <div class="col-md-4">
-                <label class="form-label" for="phone">Phone</label>
-                <InputText id="phone" class="form-control" @bind-Value="participant.PhoneNumber" />
-            </div>
-        </div>
+
+            <EditForm Model="participant" OnValidSubmit="SaveParticipant" class="dialog-form">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label" for="fullName">Full name</label>
+                        <InputText id="fullName" class="form-control" @bind-Value="participant.FullName" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="email">Email</label>
+                        <InputText id="email" class="form-control" @bind-Value="participant.Email" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="phone">Phone</label>
+                        <InputText id="phone" class="form-control" @bind-Value="participant.PhoneNumber" />
+                    </div>
+                    <div class="col-md-8">
+                        <label class="form-label" for="emergencyContact">Emergency contact</label>
+                        <InputText id="emergencyContact" class="form-control" @bind-Value="participant.EmergencyContact" />
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <label class="form-check mb-2">
+                            <InputCheckbox class="form-check-input" @bind-Value="participant.IsActive" />
+                            <span class="form-check-label">Active</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="dialog-actions">
+                    <button class="btn btn-outline-secondary" type="button" @onclick="CloseParticipantDialog">Cancel</button>
+                    <button class="btn btn-primary" type="submit">@(IsEditing ? "Save changes" : "Save participant")</button>
+                </div>
+            </EditForm>
+        </section>
     </div>
-    <div class="card-footer bg-white">
-        <button class="btn btn-primary" type="submit">Save participant</button>
-    </div>
-</EditForm>
+}
 
 <table class="table table-striped align-middle">
     <thead>
@@ -52,7 +85,7 @@
             <td>@(item.IsActive ? "Active" : "Inactive")</td>
             <td class="text-end">
                 <a class="btn btn-sm btn-outline-primary me-2" href="@($"/admin/participants/details/{item.Id}")">Details</a>
-                <a class="btn btn-sm btn-outline-secondary me-2" href="@($"/admin/participants/edit/{item.Id}")">Edit</a>
+                <button class="btn btn-sm btn-outline-secondary me-2" type="button" @onclick="() => OpenEditParticipantDialog(item.Id)">Edit</button>
                 <button class="btn btn-sm btn-outline-danger" @onclick="() => Deactivate(item.Id)" disabled="@(!item.IsActive)">Deactivate</button>
             </td>
         </tr>
@@ -61,8 +94,13 @@
 </table>
 
 @code {
-    private Participant participant = new();
+    private Participant participant = NewParticipant();
     private List<Participant> participants = new();
+    private bool showParticipantDialog;
+    private int? editingParticipantId;
+    private bool IsEditing => editingParticipantId.HasValue;
+    private string message = string.Empty;
+    private string messageClass = "alert-success";
 
     protected override async Task OnInitializedAsync()
     {
@@ -71,9 +109,65 @@
 
     private async Task SaveParticipant()
     {
-        await ParticipantService.AddParticipantAsync(participant);
-        participant = new Participant();
+        if (IsEditing)
+        {
+            await ParticipantService.UpdateParticipantAsync(participant);
+            message = "Participant updated.";
+        }
+        else
+        {
+            await ParticipantService.AddParticipantAsync(participant);
+            message = "Participant saved.";
+        }
+
+        messageClass = "alert-success";
+        CloseParticipantDialog();
         await LoadParticipants();
+    }
+
+    private void OpenAddParticipantDialog()
+    {
+        ResetParticipantForm();
+        message = string.Empty;
+        showParticipantDialog = true;
+    }
+
+    private async Task OpenEditParticipantDialog(int id)
+    {
+        var existingParticipant = await ParticipantService.GetParticipantByIdAsync(id);
+        if (existingParticipant is null)
+        {
+            message = "Participant not found.";
+            messageClass = "alert-danger";
+            return;
+        }
+
+        editingParticipantId = id;
+        participant = new Participant
+        {
+            Id = existingParticipant.Id,
+            FullName = existingParticipant.FullName,
+            Email = existingParticipant.Email,
+            PhoneNumber = existingParticipant.PhoneNumber,
+            CreatedAt = existingParticipant.CreatedAt,
+            IsActive = existingParticipant.IsActive,
+            EmergencyContact = existingParticipant.EmergencyContact,
+            PasswordHash = existingParticipant.PasswordHash
+        };
+        message = string.Empty;
+        showParticipantDialog = true;
+    }
+
+    private void CloseParticipantDialog()
+    {
+        showParticipantDialog = false;
+        ResetParticipantForm();
+    }
+
+    private void ResetParticipantForm()
+    {
+        participant = NewParticipant();
+        editingParticipantId = null;
     }
 
     private async Task Deactivate(int id)
@@ -85,5 +179,10 @@
     private async Task LoadParticipants()
     {
         participants = await ParticipantService.GetParticipantsAsync();
+    }
+
+    private static Participant NewParticipant()
+    {
+        return new Participant { IsActive = true };
     }
 }

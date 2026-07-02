@@ -7,30 +7,59 @@
 
 <h1>Manage Activities</h1>
 
-<EditForm Model="activity" OnValidSubmit="SaveActivity" class="card mb-4">
-    <DataAnnotationsValidator />
-    <div class="card-body">
-        <h2 class="h5">Add activity</h2>
-        <ValidationSummary />
-        <div class="row g-3">
-            <div class="col-md-4">
-                <label class="form-label" for="activityName">Activity name</label>
-                <InputText id="activityName" class="form-control" @bind-Value="activity.ActivityName" />
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <div class="alert @messageClass">@message</div>
+}
+
+<div class="page-actions mb-3">
+    <button class="btn btn-primary" type="button" @onclick="OpenAddActivityDialog">Add activity</button>
+</div>
+
+@if (showActivityDialog)
+{
+    <div class="dialog-backdrop" @onclick="CloseActivityDialog">
+        <section class="dialog-panel" role="dialog" aria-modal="true" aria-labelledby="activityDialogTitle" @onclick:stopPropagation="true">
+            <div class="dialog-header">
+                <div>
+                    <p class="eyebrow mb-1">Admin</p>
+                    <h2 id="activityDialogTitle">@(IsEditing ? "Edit Activity" : "Add Activity")</h2>
+                </div>
+                <button class="dialog-close" type="button" @onclick="CloseActivityDialog" aria-label="Close dialog">x</button>
             </div>
-            <div class="col-md-4">
-                <label class="form-label" for="activityType">Activity type</label>
-                <InputText id="activityType" class="form-control" @bind-Value="activity.ActivityType" />
-            </div>
-            <div class="col-md-4">
-                <label class="form-label" for="description">Description</label>
-                <InputText id="description" class="form-control" @bind-Value="activity.Description" />
-            </div>
-        </div>
+
+            <EditForm Model="activity" OnValidSubmit="SaveActivity" class="dialog-form">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label" for="activityName">Activity name</label>
+                        <InputText id="activityName" class="form-control" @bind-Value="activity.ActivityName" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="activityType">Activity type</label>
+                        <InputText id="activityType" class="form-control" @bind-Value="activity.ActivityType" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="description">Description</label>
+                        <InputText id="description" class="form-control" @bind-Value="activity.Description" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-check">
+                            <InputCheckbox class="form-check-input" @bind-Value="activity.IsActive" />
+                            <span class="form-check-label">Active</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="dialog-actions">
+                    <button class="btn btn-outline-secondary" type="button" @onclick="CloseActivityDialog">Cancel</button>
+                    <button class="btn btn-primary" type="submit">@(IsEditing ? "Save changes" : "Save activity")</button>
+                </div>
+            </EditForm>
+        </section>
     </div>
-    <div class="card-footer bg-white">
-        <button class="btn btn-primary" type="submit">Save activity</button>
-    </div>
-</EditForm>
+}
 
 <table class="table table-striped align-middle">
     <thead>
@@ -50,7 +79,7 @@
             <td>@(item.IsActive ? "Active" : "Inactive")</td>
             <td class="text-end">
                 <a class="btn btn-sm btn-outline-primary me-2" href="@($"/admin/activities/details/{item.Id}")">Details</a>
-                <a class="btn btn-sm btn-outline-secondary me-2" href="@($"/admin/activities/edit/{item.Id}")">Edit</a>
+                <button class="btn btn-sm btn-outline-secondary me-2" type="button" @onclick="() => OpenEditActivityDialog(item.Id)">Edit</button>
                 <button class="btn btn-sm btn-outline-danger" @onclick="() => Deactivate(item.Id)" disabled="@(!item.IsActive)">Deactivate</button>
             </td>
         </tr>
@@ -59,8 +88,13 @@
 </table>
 
 @code {
-    private Activity activity = new();
+    private Activity activity = NewActivity();
     private List<Activity> activities = new();
+    private bool showActivityDialog;
+    private int? editingActivityId;
+    private bool IsEditing => editingActivityId.HasValue;
+    private string message = string.Empty;
+    private string messageClass = "alert-success";
 
     protected override async Task OnInitializedAsync()
     {
@@ -69,9 +103,62 @@
 
     private async Task SaveActivity()
     {
-        await ActivityService.AddActivityAsync(activity);
-        activity = new Activity();
+        if (IsEditing)
+        {
+            await ActivityService.UpdateActivityAsync(activity);
+            message = "Activity updated.";
+        }
+        else
+        {
+            await ActivityService.AddActivityAsync(activity);
+            message = "Activity saved.";
+        }
+
+        messageClass = "alert-success";
+        CloseActivityDialog();
         await LoadActivities();
+    }
+
+    private void OpenAddActivityDialog()
+    {
+        ResetActivityForm();
+        message = string.Empty;
+        showActivityDialog = true;
+    }
+
+    private async Task OpenEditActivityDialog(int id)
+    {
+        var existingActivity = await ActivityService.GetActivityByIdAsync(id);
+        if (existingActivity is null)
+        {
+            message = "Activity not found.";
+            messageClass = "alert-danger";
+            return;
+        }
+
+        editingActivityId = id;
+        activity = new Activity
+        {
+            Id = existingActivity.Id,
+            ActivityName = existingActivity.ActivityName,
+            ActivityType = existingActivity.ActivityType,
+            Description = existingActivity.Description,
+            IsActive = existingActivity.IsActive
+        };
+        message = string.Empty;
+        showActivityDialog = true;
+    }
+
+    private void CloseActivityDialog()
+    {
+        showActivityDialog = false;
+        ResetActivityForm();
+    }
+
+    private void ResetActivityForm()
+    {
+        activity = NewActivity();
+        editingActivityId = null;
     }
 
     private async Task Deactivate(int id)
@@ -83,5 +170,10 @@
     private async Task LoadActivities()
     {
         activities = await ActivityService.GetActivitiesAsync();
+    }
+
+    private static Activity NewActivity()
+    {
+        return new Activity { IsActive = true };
     }
 }

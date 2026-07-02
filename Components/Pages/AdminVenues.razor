@@ -7,34 +7,63 @@
 
 <h1>Manage Venues</h1>
 
-<EditForm Model="venue" OnValidSubmit="SaveVenue" class="card mb-4">
-    <DataAnnotationsValidator />
-    <div class="card-body">
-        <h2 class="h5">Add venue</h2>
-        <ValidationSummary />
-        <div class="row g-3">
-            <div class="col-md-4">
-                <label class="form-label" for="venueName">Venue name</label>
-                <InputText id="venueName" class="form-control" @bind-Value="venue.VenueName" />
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <div class="alert @messageClass">@message</div>
+}
+
+<div class="page-actions mb-3">
+    <button class="btn btn-primary" type="button" @onclick="OpenAddVenueDialog">Add venue</button>
+</div>
+
+@if (showVenueDialog)
+{
+    <div class="dialog-backdrop" @onclick="CloseVenueDialog">
+        <section class="dialog-panel" role="dialog" aria-modal="true" aria-labelledby="venueDialogTitle" @onclick:stopPropagation="true">
+            <div class="dialog-header">
+                <div>
+                    <p class="eyebrow mb-1">Admin</p>
+                    <h2 id="venueDialogTitle">@(IsEditing ? "Edit Venue" : "Add Venue")</h2>
+                </div>
+                <button class="dialog-close" type="button" @onclick="CloseVenueDialog" aria-label="Close dialog">x</button>
             </div>
-            <div class="col-md-4">
-                <label class="form-label" for="address">Address</label>
-                <InputText id="address" class="form-control" @bind-Value="venue.Address" />
-            </div>
-            <div class="col-md-4">
-                <label class="form-label" for="capacity">Capacity</label>
-                <InputNumber id="capacity" class="form-control" @bind-Value="venue.Capacity" />
-            </div>
-            <div class="col-12">
-                <label class="form-label" for="description">Description</label>
-                <InputTextArea id="description" class="form-control" @bind-Value="venue.Description" />
-            </div>
-        </div>
+
+            <EditForm Model="venue" OnValidSubmit="SaveVenue" class="dialog-form">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label" for="venueName">Venue name</label>
+                        <InputText id="venueName" class="form-control" @bind-Value="venue.VenueName" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="address">Address</label>
+                        <InputText id="address" class="form-control" @bind-Value="venue.Address" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="capacity">Capacity</label>
+                        <InputNumber id="capacity" class="form-control" @bind-Value="venue.Capacity" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label" for="description">Description</label>
+                        <InputTextArea id="description" class="form-control" @bind-Value="venue.Description" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-check">
+                            <InputCheckbox class="form-check-input" @bind-Value="venue.IsAvailable" />
+                            <span class="form-check-label">Available</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="dialog-actions">
+                    <button class="btn btn-outline-secondary" type="button" @onclick="CloseVenueDialog">Cancel</button>
+                    <button class="btn btn-primary" type="submit">@(IsEditing ? "Save changes" : "Save venue")</button>
+                </div>
+            </EditForm>
+        </section>
     </div>
-    <div class="card-footer bg-white">
-        <button class="btn btn-primary" type="submit">Save venue</button>
-    </div>
-</EditForm>
+}
 
 <table class="table table-striped align-middle">
     <thead>
@@ -56,7 +85,7 @@
             <td>@(item.IsAvailable ? "Yes" : "No")</td>
             <td class="text-end">
                 <a class="btn btn-sm btn-outline-primary me-2" href="@($"/admin/venues/details/{item.Id}")">Details</a>
-                <a class="btn btn-sm btn-outline-secondary me-2" href="@($"/admin/venues/edit/{item.Id}")">Edit</a>
+                <button class="btn btn-sm btn-outline-secondary me-2" type="button" @onclick="() => OpenEditVenueDialog(item.Id)">Edit</button>
                 <button class="btn btn-sm btn-outline-secondary" @onclick="() => ToggleAvailability(item)">Toggle</button>
             </td>
         </tr>
@@ -65,8 +94,13 @@
 </table>
 
 @code {
-    private Venue venue = new() { Capacity = 1 };
+    private Venue venue = NewVenue();
     private List<Venue> venues = new();
+    private bool showVenueDialog;
+    private int? editingVenueId;
+    private bool IsEditing => editingVenueId.HasValue;
+    private string message = string.Empty;
+    private string messageClass = "alert-success";
 
     protected override async Task OnInitializedAsync()
     {
@@ -75,9 +109,63 @@
 
     private async Task SaveVenue()
     {
-        await VenueService.AddVenueAsync(venue);
-        venue = new Venue { Capacity = 1 };
+        if (IsEditing)
+        {
+            await VenueService.UpdateVenueAsync(venue);
+            message = "Venue updated.";
+        }
+        else
+        {
+            await VenueService.AddVenueAsync(venue);
+            message = "Venue saved.";
+        }
+
+        messageClass = "alert-success";
+        CloseVenueDialog();
         await LoadVenues();
+    }
+
+    private void OpenAddVenueDialog()
+    {
+        ResetVenueForm();
+        message = string.Empty;
+        showVenueDialog = true;
+    }
+
+    private async Task OpenEditVenueDialog(int id)
+    {
+        var existingVenue = await VenueService.GetVenueByIdAsync(id);
+        if (existingVenue is null)
+        {
+            message = "Venue not found.";
+            messageClass = "alert-danger";
+            return;
+        }
+
+        editingVenueId = id;
+        venue = new Venue
+        {
+            Id = existingVenue.Id,
+            VenueName = existingVenue.VenueName,
+            Address = existingVenue.Address,
+            Capacity = existingVenue.Capacity,
+            Description = existingVenue.Description,
+            IsAvailable = existingVenue.IsAvailable
+        };
+        message = string.Empty;
+        showVenueDialog = true;
+    }
+
+    private void CloseVenueDialog()
+    {
+        showVenueDialog = false;
+        ResetVenueForm();
+    }
+
+    private void ResetVenueForm()
+    {
+        venue = NewVenue();
+        editingVenueId = null;
     }
 
     private async Task ToggleAvailability(Venue item)
@@ -89,5 +177,10 @@
     private async Task LoadVenues()
     {
         venues = await VenueService.GetVenuesAsync();
+    }
+
+    private static Venue NewVenue()
+    {
+        return new Venue { Capacity = 1, IsAvailable = true };
     }
 }
