@@ -16,15 +16,18 @@ public class ReportService : IReportService
 
     public async Task<Dictionary<string, int>> GetEventRegistrationCountsAsync()
     {
-        return await _context.Events
+        var eventCounts = await _context.Events
             .AsNoTracking()
             .Select(eventItem => new
             {
                 eventItem.EventName,
                 Count = eventItem.Registrations.Count(registration => registration.Status != RegistrationStatus.Cancelled)
             })
+            .ToListAsync();
+
+        return eventCounts
             .GroupBy(item => item.EventName)
-            .ToDictionaryAsync(group => group.Key, group => group.Sum(item => item.Count));
+            .ToDictionary(group => group.Key, group => group.Sum(item => item.Count));
     }
 
     public async Task<Dictionary<string, int>> GetVenueUsageCountsAsync()

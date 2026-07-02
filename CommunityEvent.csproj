@@ -18,4 +18,10 @@
       <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="8.0.3" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Compile Remove="CommunityEvent.Tests/**/*.cs" />
+      <Content Remove="CommunityEvent.Tests/**" />
+      <None Remove="CommunityEvent.Tests/**" />
+    </ItemGroup>
+
 </Project>
