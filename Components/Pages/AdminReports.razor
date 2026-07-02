@@ -1,0 +1,34 @@
+@page "/admin/reports"
+@inject IReportService ReportService
+
+<PageTitle>Reports</PageTitle>
+
+<h1>Reports</h1>
+
+<div class="row g-4">
+    <div class="col-lg-4">
+        <h2 class="h5">Event registration count</h2>
+        <ReportList Items="eventCounts" />
+    </div>
+    <div class="col-lg-4">
+        <h2 class="h5">Venue usage</h2>
+        <ReportList Items="venueUsage" />
+    </div>
+    <div class="col-lg-4">
+        <h2 class="h5">Activity popularity</h2>
+        <ReportList Items="activityPopularity" />
+    </div>
+</div>
+
+@code {
+    private Dictionary<string, int> eventCounts = new();
+    private Dictionary<string, int> venueUsage = new();
+    private Dictionary<string, int> activityPopularity = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        eventCounts = await ReportService.GetEventRegistrationCountsAsync();
+        venueUsage = await ReportService.GetVenueUsageCountsAsync();
+        activityPopularity = await ReportService.GetActivityPopularityCountsAsync();
+    }
+}

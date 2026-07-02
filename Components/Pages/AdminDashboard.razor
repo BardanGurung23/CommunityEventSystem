@@ -1,0 +1,59 @@
+@page "/admin/dashboard"
+@inject IEventService EventService
+@inject IParticipantService ParticipantService
+@inject IVenueService VenueService
+@inject IActivityService ActivityService
+
+<PageTitle>Admin Dashboard</PageTitle>
+
+<h1>Admin Dashboard</h1>
+
+<div class="row g-3">
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="text-muted">Events</div>
+                <div class="display-6">@eventCount</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="text-muted">Participants</div>
+                <div class="display-6">@participantCount</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="text-muted">Venues</div>
+                <div class="display-6">@venueCount</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="text-muted">Activities</div>
+                <div class="display-6">@activityCount</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private int eventCount;
+    private int participantCount;
+    private int venueCount;
+    private int activityCount;
+
+    protected override async Task OnInitializedAsync()
+    {
+        eventCount = (await EventService.GetEventsAsync()).Count;
+        participantCount = (await ParticipantService.GetParticipantsAsync()).Count;
+        venueCount = (await VenueService.GetVenuesAsync()).Count;
+        activityCount = (await ActivityService.GetActivitiesAsync()).Count;
+    }
+}

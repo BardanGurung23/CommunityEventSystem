@@ -1,0 +1,115 @@
+@page "/events/details/{Id:int}"
+@rendermode InteractiveServer
+@inject IEventService EventService
+@inject IParticipantService ParticipantService
+@inject IRegistrationService RegistrationService
+
+<PageTitle>Event Details</PageTitle>
+
+@if (eventItem is null)
+{
+    <div class="alert alert-warning">Event not found.</div>
+}
+else
+{
+    <h1>@eventItem.EventName</h1>
+    <p class="lead">@eventItem.Description</p>
+
+    <dl class="row">
+        <dt class="col-sm-3">Date</dt>
+        <dd class="col-sm-9">@eventItem.EventDate.ToString("dd MMM yyyy")</dd>
+        <dt class="col-sm-3">Time</dt>
+        <dd class="col-sm-9">@eventItem.StartTime.ToString(@"hh\:mm") - @eventItem.EndTime.ToString(@"hh\:mm")</dd>
+        <dt class="col-sm-3">Venues</dt>
+        <dd class="col-sm-9">@GetVenueList()</dd>
+        <dt class="col-sm-3">Activities</dt>
+        <dd class="col-sm-9">@GetActivityList()</dd>
+    </dl>
+
+    <div class="card">
+        <div class="card-body">
+            <h2 class="h5">Register participant</h2>
+            @if (!string.IsNullOrWhiteSpace(message))
+            {
+                <div class="alert @messageClass">@message</div>
+            }
+            <div class="row g-3 align-items-end">
+                <div class="col-md-6">
+                    <label class="form-label" for="participant">Participant</label>
+                    <InputSelect id="participant" class="form-select" @bind-Value="participantId">
+                        <option value="0">Choose participant</option>
+                        @foreach (var participant in participants)
+                        {
+                            <option value="@participant.Id">@participant.FullName</option>
+                        }
+                    </InputSelect>
+                </div>
+                <div class="col-md-6">
+                    <button class="btn btn-primary" @onclick="Register">Register</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private Event? eventItem;
+    private List<Participant> participants = new();
+    private int participantId;
+    private string message = string.Empty;
+    private string messageClass = "alert-success";
+
+    protected override async Task OnInitializedAsync()
+    {
+        eventItem = await EventService.GetEventByIdAsync(Id);
+        participants = (await ParticipantService.GetParticipantsAsync())
+            .Where(participant => participant.IsActive)
+            .ToList();
+    }
+
+    private async Task Register()
+    {
+        if (participantId <= 0)
+        {
+            message = "Choose a participant before registering.";
+            messageClass = "alert-warning";
+            return;
+        }
+
+        try
+        {
+            await RegistrationService.RegisterParticipantAsync(participantId, Id);
+            eventItem = await EventService.GetEventByIdAsync(Id);
+            message = "Registration submitted.";
+            messageClass = "alert-success";
+        }
+        catch (Exception ex)
+        {
+            message = ex.Message;
+            messageClass = "alert-danger";
+        }
+    }
+
+    private string GetVenueList()
+    {
+        var venues = eventItem?.EventVenues
+            .Where(eventVenue => eventVenue.Venue is not null)
+            .Select(eventVenue => eventVenue.Venue!.VenueName)
+            .ToList() ?? new List<string>();
+
+        return venues.Count == 0 ? "To be confirmed" : string.Join(", ", venues);
+    }
+
+    private string GetActivityList()
+    {
+        var activities = eventItem?.EventActivities
+            .Where(eventActivity => eventActivity.Activity is not null)
+            .Select(eventActivity => eventActivity.Activity!.ActivityName)
+            .ToList() ?? new List<string>();
+
+        return activities.Count == 0 ? "No activities assigned" : string.Join(", ", activities);
+    }
+}

@@ -1,0 +1,98 @@
+@page "/events"
+@rendermode InteractiveServer
+@inject IEventService EventService
+
+<PageTitle>Upcoming Events</PageTitle>
+
+<h1>Upcoming Events</h1>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <label class="form-label" for="eventDate">Filter by date</label>
+        <InputDate id="eventDate" class="form-control" @bind-Value="filterDate" />
+    </div>
+    <div class="col-md-4">
+        <label class="form-label" for="venueName">Filter by venue</label>
+        <InputText id="venueName" class="form-control" @bind-Value="venueName" />
+    </div>
+    <div class="col-md-4 d-flex align-items-end gap-2">
+        <button class="btn btn-primary" @onclick="ApplyFilters">Filter</button>
+        <button class="btn btn-outline-secondary" @onclick="ClearFilters">Clear</button>
+    </div>
+</div>
+
+@if (events is null)
+{
+    <p>Loading events...</p>
+}
+else if (events.Count == 0)
+{
+    <div class="alert alert-info">No upcoming events found.</div>
+}
+else
+{
+    <div class="row g-3">
+        @foreach (var eventItem in events)
+        {
+            <div class="col-md-6 col-xl-4">
+                <div class="card h-100 event-card">
+                    <div class="card-body">
+                        <h2 class="h5">@eventItem.EventName</h2>
+                        <p class="text-muted mb-2">@eventItem.EventDate.ToString("dd MMM yyyy") · @eventItem.StartTime.ToString(@"hh\:mm")</p>
+                        <p>@eventItem.Description</p>
+                        <p class="mb-1"><strong>Capacity:</strong> @eventItem.Registrations.Count(r => r.Status != RegistrationStatus.Cancelled) / @eventItem.MaxParticipants</p>
+                        <p class="mb-0"><strong>Venue:</strong> @GetVenueList(eventItem)</p>
+                    </div>
+                    <div class="card-footer bg-white">
+                        <a class="btn btn-sm btn-outline-primary" href="@($"/events/details/{eventItem.Id}")">View details</a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private List<Event>? events;
+    private DateTime? filterDate;
+    private string venueName = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        events = await EventService.GetUpcomingEventsAsync();
+    }
+
+    private async Task ApplyFilters()
+    {
+        if (!string.IsNullOrWhiteSpace(venueName))
+        {
+            events = await EventService.GetEventsAsync(venueName);
+            return;
+        }
+
+        if (filterDate.HasValue)
+        {
+            events = await EventService.GetEventsAsync(filterDate.Value);
+            return;
+        }
+
+        events = await EventService.GetUpcomingEventsAsync();
+    }
+
+    private async Task ClearFilters()
+    {
+        filterDate = null;
+        venueName = string.Empty;
+        events = await EventService.GetUpcomingEventsAsync();
+    }
+
+    private static string GetVenueList(Event eventItem)
+    {
+        var venues = eventItem.EventVenues
+            .Where(eventVenue => eventVenue.Venue is not null)
+            .Select(eventVenue => eventVenue.Venue!.VenueName)
+            .ToList();
+
+        return venues.Count == 0 ? "To be confirmed" : string.Join(", ", venues);
+    }
+}

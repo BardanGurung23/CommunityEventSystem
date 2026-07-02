@@ -1,0 +1,90 @@
+@page "/admin/venues"
+@rendermode InteractiveServer
+@inject IVenueService VenueService
+
+<PageTitle>Venues</PageTitle>
+
+<h1>Manage Venues</h1>
+
+<EditForm Model="venue" OnValidSubmit="SaveVenue" class="card mb-4">
+    <DataAnnotationsValidator />
+    <div class="card-body">
+        <h2 class="h5">Add venue</h2>
+        <ValidationSummary />
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label" for="venueName">Venue name</label>
+                <InputText id="venueName" class="form-control" @bind-Value="venue.VenueName" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="address">Address</label>
+                <InputText id="address" class="form-control" @bind-Value="venue.Address" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="capacity">Capacity</label>
+                <InputNumber id="capacity" class="form-control" @bind-Value="venue.Capacity" />
+            </div>
+            <div class="col-12">
+                <label class="form-label" for="description">Description</label>
+                <InputTextArea id="description" class="form-control" @bind-Value="venue.Description" />
+            </div>
+        </div>
+    </div>
+    <div class="card-footer bg-white">
+        <button class="btn btn-primary" type="submit">Save venue</button>
+    </div>
+</EditForm>
+
+<table class="table table-striped align-middle">
+    <thead>
+    <tr>
+        <th>Venue</th>
+        <th>Address</th>
+        <th>Capacity</th>
+        <th>Available</th>
+        <th></th>
+    </tr>
+    </thead>
+    <tbody>
+    @foreach (var item in venues)
+    {
+        <tr>
+            <td>@item.VenueName</td>
+            <td>@item.Address</td>
+            <td>@item.Capacity</td>
+            <td>@(item.IsAvailable ? "Yes" : "No")</td>
+            <td class="text-end">
+                <button class="btn btn-sm btn-outline-secondary" @onclick="() => ToggleAvailability(item)">Toggle</button>
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>
+
+@code {
+    private Venue venue = new() { Capacity = 1 };
+    private List<Venue> venues = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadVenues();
+    }
+
+    private async Task SaveVenue()
+    {
+        await VenueService.AddVenueAsync(venue);
+        venue = new Venue { Capacity = 1 };
+        await LoadVenues();
+    }
+
+    private async Task ToggleAvailability(Venue item)
+    {
+        await VenueService.SetVenueAvailabilityAsync(item.Id, !item.IsAvailable);
+        await LoadVenues();
+    }
+
+    private async Task LoadVenues()
+    {
+        venues = await VenueService.GetVenuesAsync();
+    }
+}

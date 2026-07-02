@@ -1,0 +1,21 @@
+@if (Items.Count == 0)
+{
+    <div class="alert alert-info">No data yet.</div>
+}
+else
+{
+    <ul class="list-group">
+        @foreach (var item in Items.OrderByDescending(item => item.Value))
+        {
+            <li class="list-group-item d-flex justify-content-between">
+                <span>@item.Key</span>
+                <strong>@item.Value</strong>
+            </li>
+        }
+    </ul>
+}
+
+@code {
+    [Parameter]
+    public Dictionary<string, int> Items { get; set; } = new();
+}

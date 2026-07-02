@@ -1,0 +1,60 @@
+@page "/admin/registrations"
+@rendermode InteractiveServer
+@inject IRegistrationService RegistrationService
+
+<PageTitle>Registrations</PageTitle>
+
+<h1>Manage Registrations</h1>
+
+<table class="table table-striped align-middle">
+    <thead>
+    <tr>
+        <th>Participant</th>
+        <th>Event</th>
+        <th>Date</th>
+        <th>Status</th>
+        <th></th>
+    </tr>
+    </thead>
+    <tbody>
+    @foreach (var item in registrations)
+    {
+        <tr>
+            <td>@item.Participant?.FullName</td>
+            <td>@item.Event?.EventName</td>
+            <td>@item.RegistrationDate.ToString("dd MMM yyyy")</td>
+            <td>@item.Status</td>
+            <td class="text-end">
+                <button class="btn btn-sm btn-outline-success me-2" @onclick="() => Confirm(item.Id)" disabled="@(item.Status == RegistrationStatus.Confirmed)">Approve</button>
+                <button class="btn btn-sm btn-outline-danger" @onclick="() => Cancel(item.Id)" disabled="@(item.Status == RegistrationStatus.Cancelled)">Cancel</button>
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>
+
+@code {
+    private List<Registration> registrations = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadRegistrations();
+    }
+
+    private async Task Confirm(int id)
+    {
+        await RegistrationService.ConfirmRegistrationAsync(id);
+        await LoadRegistrations();
+    }
+
+    private async Task Cancel(int id)
+    {
+        await RegistrationService.CancelRegistrationAsync(id);
+        await LoadRegistrations();
+    }
+
+    private async Task LoadRegistrations()
+    {
+        registrations = await RegistrationService.GetRegistrationsAsync();
+    }
+}

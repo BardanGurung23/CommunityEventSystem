@@ -1,0 +1,86 @@
+@page "/admin/participants"
+@rendermode InteractiveServer
+@inject IParticipantService ParticipantService
+
+<PageTitle>Participants</PageTitle>
+
+<h1>Manage Participants</h1>
+
+<EditForm Model="participant" OnValidSubmit="SaveParticipant" class="card mb-4">
+    <DataAnnotationsValidator />
+    <div class="card-body">
+        <h2 class="h5">Add participant</h2>
+        <ValidationSummary />
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label" for="fullName">Full name</label>
+                <InputText id="fullName" class="form-control" @bind-Value="participant.FullName" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="email">Email</label>
+                <InputText id="email" class="form-control" @bind-Value="participant.Email" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="phone">Phone</label>
+                <InputText id="phone" class="form-control" @bind-Value="participant.PhoneNumber" />
+            </div>
+        </div>
+    </div>
+    <div class="card-footer bg-white">
+        <button class="btn btn-primary" type="submit">Save participant</button>
+    </div>
+</EditForm>
+
+<table class="table table-striped align-middle">
+    <thead>
+    <tr>
+        <th>Name</th>
+        <th>Email</th>
+        <th>Phone</th>
+        <th>Status</th>
+        <th></th>
+    </tr>
+    </thead>
+    <tbody>
+    @foreach (var item in participants)
+    {
+        <tr>
+            <td>@item.FullName</td>
+            <td>@item.Email</td>
+            <td>@item.PhoneNumber</td>
+            <td>@(item.IsActive ? "Active" : "Inactive")</td>
+            <td class="text-end">
+                <button class="btn btn-sm btn-outline-danger" @onclick="() => Deactivate(item.Id)" disabled="@(!item.IsActive)">Deactivate</button>
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>
+
+@code {
+    private Participant participant = new();
+    private List<Participant> participants = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadParticipants();
+    }
+
+    private async Task SaveParticipant()
+    {
+        await ParticipantService.AddParticipantAsync(participant);
+        participant = new Participant();
+        await LoadParticipants();
+    }
+
+    private async Task Deactivate(int id)
+    {
+        await ParticipantService.DeactivateParticipantAsync(id);
+        await LoadParticipants();
+    }
+
+    private async Task LoadParticipants()
+    {
+        participants = await ParticipantService.GetParticipantsAsync();
+    }
+}

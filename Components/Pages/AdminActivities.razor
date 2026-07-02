@@ -1,0 +1,84 @@
+@page "/admin/activities"
+@rendermode InteractiveServer
+@inject IActivityService ActivityService
+
+<PageTitle>Activities</PageTitle>
+
+<h1>Manage Activities</h1>
+
+<EditForm Model="activity" OnValidSubmit="SaveActivity" class="card mb-4">
+    <DataAnnotationsValidator />
+    <div class="card-body">
+        <h2 class="h5">Add activity</h2>
+        <ValidationSummary />
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label" for="activityName">Activity name</label>
+                <InputText id="activityName" class="form-control" @bind-Value="activity.ActivityName" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="activityType">Activity type</label>
+                <InputText id="activityType" class="form-control" @bind-Value="activity.ActivityType" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="description">Description</label>
+                <InputText id="description" class="form-control" @bind-Value="activity.Description" />
+            </div>
+        </div>
+    </div>
+    <div class="card-footer bg-white">
+        <button class="btn btn-primary" type="submit">Save activity</button>
+    </div>
+</EditForm>
+
+<table class="table table-striped align-middle">
+    <thead>
+    <tr>
+        <th>Activity</th>
+        <th>Type</th>
+        <th>Status</th>
+        <th></th>
+    </tr>
+    </thead>
+    <tbody>
+    @foreach (var item in activities)
+    {
+        <tr>
+            <td>@item.ActivityName</td>
+            <td>@item.ActivityType</td>
+            <td>@(item.IsActive ? "Active" : "Inactive")</td>
+            <td class="text-end">
+                <button class="btn btn-sm btn-outline-danger" @onclick="() => Deactivate(item.Id)" disabled="@(!item.IsActive)">Deactivate</button>
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>
+
+@code {
+    private Activity activity = new();
+    private List<Activity> activities = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadActivities();
+    }
+
+    private async Task SaveActivity()
+    {
+        await ActivityService.AddActivityAsync(activity);
+        activity = new Activity();
+        await LoadActivities();
+    }
+
+    private async Task Deactivate(int id)
+    {
+        await ActivityService.DeactivateActivityAsync(id);
+        await LoadActivities();
+    }
+
+    private async Task LoadActivities()
+    {
+        activities = await ActivityService.GetActivitiesAsync();
+    }
+}

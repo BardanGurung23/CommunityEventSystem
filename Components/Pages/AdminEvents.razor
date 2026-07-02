@@ -1,0 +1,190 @@
+@page "/admin/events"
+@rendermode InteractiveServer
+@inject IEventService EventService
+@inject IVenueService VenueService
+@inject IActivityService ActivityService
+
+<PageTitle>Events</PageTitle>
+
+<h1>Manage Events</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <div class="alert @messageClass">@message</div>
+}
+
+<EditForm Model="eventModel" OnValidSubmit="SaveEvent" class="card mb-4">
+    <DataAnnotationsValidator />
+    <div class="card-body">
+        <h2 class="h5">Add event</h2>
+        <ValidationSummary />
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label" for="eventName">Event name</label>
+                <InputText id="eventName" class="form-control" @bind-Value="eventModel.EventName" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label" for="eventDate">Date</label>
+                <InputDate id="eventDate" class="form-control" @bind-Value="eventModel.EventDate" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label" for="maxParticipants">Max participants</label>
+                <InputNumber id="maxParticipants" class="form-control" @bind-Value="eventModel.MaxParticipants" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label" for="startTime">Start time</label>
+                <InputText id="startTime" class="form-control" @bind-Value="startTimeText" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label" for="endTime">End time</label>
+                <InputText id="endTime" class="form-control" @bind-Value="endTimeText" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label" for="venue">Venue</label>
+                <select id="venue" class="form-select" @bind="selectedVenueId">
+                    <option value="0">Choose venue</option>
+                    @foreach (var venue in venues.Where(venue => venue.IsAvailable))
+                    {
+                        <option value="@venue.Id">@venue.VenueName</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label" for="activity">Activity</label>
+                <select id="activity" class="form-select" @bind="selectedActivityId">
+                    <option value="0">Choose activity</option>
+                    @foreach (var activity in activities.Where(activity => activity.IsActive))
+                    {
+                        <option value="@activity.Id">@activity.ActivityName</option>
+                    }
+                </select>
+            </div>
+            <div class="col-12">
+                <label class="form-label" for="eventDescription">Description</label>
+                <InputTextArea id="eventDescription" class="form-control" @bind-Value="eventModel.Description" />
+            </div>
+        </div>
+    </div>
+    <div class="card-footer bg-white">
+        <button class="btn btn-primary" type="submit">Save event</button>
+    </div>
+</EditForm>
+
+<table class="table table-striped align-middle">
+    <thead>
+    <tr>
+        <th>Event</th>
+        <th>Date</th>
+        <th>Venue</th>
+        <th>Activities</th>
+        <th>Status</th>
+        <th></th>
+    </tr>
+    </thead>
+    <tbody>
+    @foreach (var item in events)
+    {
+        <tr>
+            <td>@item.EventName</td>
+            <td>@item.EventDate.ToString("dd MMM yyyy")</td>
+            <td>@GetVenueList(item)</td>
+            <td>@GetActivityList(item)</td>
+            <td>@(item.IsActive ? "Active" : "Inactive")</td>
+            <td class="text-end">
+                <a class="btn btn-sm btn-outline-primary me-2" href="@($"/events/details/{item.Id}")">Details</a>
+                <button class="btn btn-sm btn-outline-danger" @onclick="() => Deactivate(item.Id)" disabled="@(!item.IsActive)">Deactivate</button>
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>
+
+@code {
+    private Event eventModel = NewEvent();
+    private List<Event> events = new();
+    private List<Venue> venues = new();
+    private List<Activity> activities = new();
+    private int selectedVenueId;
+    private int selectedActivityId;
+    private string startTimeText = "09:00";
+    private string endTimeText = "10:00";
+    private string message = string.Empty;
+    private string messageClass = "alert-success";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task SaveEvent()
+    {
+        try
+        {
+            eventModel.StartTime = TimeSpan.Parse(startTimeText);
+            eventModel.EndTime = TimeSpan.Parse(endTimeText);
+
+            var venueIds = selectedVenueId > 0 ? new[] { selectedVenueId } : Array.Empty<int>();
+            var activityIds = selectedActivityId > 0 ? new[] { selectedActivityId } : Array.Empty<int>();
+
+            await EventService.AddEventAsync(eventModel, venueIds, activityIds);
+            eventModel = NewEvent();
+            selectedVenueId = 0;
+            selectedActivityId = 0;
+            startTimeText = "09:00";
+            endTimeText = "10:00";
+            message = "Event saved.";
+            messageClass = "alert-success";
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            message = ex.Message;
+            messageClass = "alert-danger";
+        }
+    }
+
+    private async Task Deactivate(int id)
+    {
+        await EventService.DeactivateEventAsync(id);
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        events = await EventService.GetEventsAsync();
+        venues = await VenueService.GetVenuesAsync();
+        activities = await ActivityService.GetActivitiesAsync();
+    }
+
+    private static Event NewEvent()
+    {
+        return new Event
+        {
+            EventDate = DateTime.Today.AddDays(1),
+            StartTime = TimeSpan.FromHours(9),
+            EndTime = TimeSpan.FromHours(10),
+            MaxParticipants = 1,
+            IsActive = true
+        };
+    }
+
+    private static string GetVenueList(Event item)
+    {
+        var names = item.EventVenues
+            .Where(eventVenue => eventVenue.Venue is not null)
+            .Select(eventVenue => eventVenue.Venue!.VenueName)
+            .ToList();
+
+        return names.Count == 0 ? "Not assigned" : string.Join(", ", names);
+    }
+
+    private static string GetActivityList(Event item)
+    {
+        var names = item.EventActivities
+            .Where(eventActivity => eventActivity.Activity is not null)
+            .Select(eventActivity => eventActivity.Activity!.ActivityName)
+            .ToList();
+
+        return names.Count == 0 ? "Not assigned" : string.Join(", ", names);
+    }
+}
