@@ -4,57 +4,180 @@
 @inject IParticipantService ParticipantService
 @inject IVenueService VenueService
 @inject IActivityService ActivityService
+@inject IRegistrationService RegistrationService
 
 <PageTitle>Admin Dashboard</PageTitle>
 
-<h1>Admin Dashboard</h1>
+<section class="dashboard-hero">
+    <div>
+        <p class="eyebrow">Admin overview</p>
+        <h1>Admin Dashboard</h1>
+        <p class="lead">Monitor events, participants, venues, and registrations from one focused workspace.</p>
+    </div>
+    <div class="dashboard-hero-actions">
+        <a class="btn btn-primary" href="/admin/events">Manage events</a>
+        <a class="btn btn-outline-secondary" href="/admin/reports">View reports</a>
+    </div>
+</section>
 
-<div class="row g-3">
-    <div class="col-md-3">
-        <div class="card stat-card">
-            <div class="card-body">
-                <div class="text-muted">Events</div>
-                <div class="display-6">@eventCount</div>
+<div class="dashboard-kpi-grid">
+    <article class="dashboard-kpi-card">
+        <p>Total events</p>
+        <strong>@eventCount</strong>
+        <span>@upcomingEventCount upcoming</span>
+    </article>
+    <article class="dashboard-kpi-card">
+        <p>Participants</p>
+        <strong>@participantCount</strong>
+        <span>@activeParticipantCount active</span>
+    </article>
+    <article class="dashboard-kpi-card">
+        <p>Registrations</p>
+        <strong>@registrationCount</strong>
+        <span>@pendingRegistrationCount pending review</span>
+    </article>
+    <article class="dashboard-kpi-card">
+        <p>Available venues</p>
+        <strong>@availableVenueCount</strong>
+        <span>@venueCount total venues</span>
+    </article>
+</div>
+
+<div class="dashboard-grid">
+    <section class="dashboard-panel dashboard-panel-large">
+        <div class="dashboard-panel-header">
+            <div>
+                <h2>Upcoming Events</h2>
+                <p>Next scheduled active events.</p>
+            </div>
+            <a href="/admin/events">Open</a>
+        </div>
+
+        @if (upcomingEvents.Count == 0)
+        {
+            <div class="dashboard-empty">No upcoming events scheduled.</div>
+        }
+        else
+        {
+            <div class="dashboard-event-list">
+                @foreach (var item in upcomingEvents.Take(5))
+                {
+                    <article class="dashboard-event-item">
+                        <div class="dashboard-date-chip">
+                            <strong>@item.EventDate.ToString("dd")</strong>
+                            <span>@item.EventDate.ToString("MMM")</span>
+                        </div>
+                        <div>
+                            <h3>@item.EventName</h3>
+                            <p>@item.StartTime.ToString(@"hh\:mm") - @item.EndTime.ToString(@"hh\:mm") · @GetVenueList(item)</p>
+                        </div>
+                        <span>@item.Registrations.Count(registration => registration.Status != RegistrationStatus.Cancelled)/@item.MaxParticipants</span>
+                    </article>
+                }
+            </div>
+        }
+    </section>
+
+    <section class="dashboard-panel">
+        <div class="dashboard-panel-header">
+            <div>
+                <h2>Registration Status</h2>
+                <p>Current registration pipeline.</p>
+            </div>
+            <a href="/admin/registrations">Review</a>
+        </div>
+
+        <div class="dashboard-status-list">
+            @StatusRow("Pending", pendingRegistrationCount, registrationCount, "Pending")
+            @StatusRow("Confirmed", confirmedRegistrationCount, registrationCount, "Confirmed")
+            @StatusRow("Cancelled", cancelledRegistrationCount, registrationCount, "Cancelled")
+        </div>
+    </section>
+
+    <section class="dashboard-panel">
+        <div class="dashboard-panel-header">
+            <div>
+                <h2>Resource Health</h2>
+                <p>Availability across venues and activities.</p>
             </div>
         </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card stat-card">
-            <div class="card-body">
-                <div class="text-muted">Participants</div>
-                <div class="display-6">@participantCount</div>
+
+        <div class="dashboard-resource-grid">
+            <div>
+                <strong>@availableVenueCount/@venueCount</strong>
+                <span>Venues available</span>
+            </div>
+            <div>
+                <strong>@activeActivityCount/@activityCount</strong>
+                <span>Activities active</span>
+            </div>
+            <div>
+                <strong>@TotalCapacity</strong>
+                <span>Total venue capacity</span>
+            </div>
+            <div>
+                <strong>@InactiveEventCount</strong>
+                <span>Inactive events</span>
             </div>
         </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card stat-card">
-            <div class="card-body">
-                <div class="text-muted">Venues</div>
-                <div class="display-6">@venueCount</div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card stat-card">
-            <div class="card-body">
-                <div class="text-muted">Activities</div>
-                <div class="display-6">@activityCount</div>
-            </div>
-        </div>
-    </div>
+    </section>
 </div>
 
 @code {
-    private int eventCount;
-    private int participantCount;
-    private int venueCount;
-    private int activityCount;
+    private List<Event> events = new();
+    private List<Event> upcomingEvents = new();
+    private List<Participant> participants = new();
+    private List<Venue> venues = new();
+    private List<Activity> activities = new();
+    private List<Registration> registrations = new();
+
+    private int eventCount => events.Count;
+    private int upcomingEventCount => upcomingEvents.Count;
+    private int InactiveEventCount => events.Count(eventItem => !eventItem.IsActive);
+    private int participantCount => participants.Count;
+    private int activeParticipantCount => participants.Count(participant => participant.IsActive);
+    private int venueCount => venues.Count;
+    private int availableVenueCount => venues.Count(venue => venue.IsAvailable);
+    private int activityCount => activities.Count;
+    private int activeActivityCount => activities.Count(activity => activity.IsActive);
+    private int registrationCount => registrations.Count;
+    private int pendingRegistrationCount => registrations.Count(registration => registration.Status == RegistrationStatus.Pending);
+    private int confirmedRegistrationCount => registrations.Count(registration => registration.Status == RegistrationStatus.Confirmed);
+    private int cancelledRegistrationCount => registrations.Count(registration => registration.Status == RegistrationStatus.Cancelled);
+    private int TotalCapacity => venues.Sum(venue => venue.Capacity);
 
     protected override async Task OnInitializedAsync()
     {
-        eventCount = (await EventService.GetEventsAsync()).Count;
-        participantCount = (await ParticipantService.GetParticipantsAsync()).Count;
-        venueCount = (await VenueService.GetVenuesAsync()).Count;
-        activityCount = (await ActivityService.GetActivitiesAsync()).Count;
+        events = await EventService.GetEventsAsync();
+        upcomingEvents = await EventService.GetUpcomingEventsAsync();
+        participants = await ParticipantService.GetParticipantsAsync();
+        venues = await VenueService.GetVenuesAsync();
+        activities = await ActivityService.GetActivitiesAsync();
+        registrations = await RegistrationService.GetRegistrationsAsync();
+    }
+
+    private RenderFragment StatusRow(string label, int value, int total, string statusClass) => @<div class="dashboard-status-row">
+        <div>
+            <strong>@label</strong>
+            <span>@value</span>
+        </div>
+        <div class="dashboard-status-bar @statusClass.ToLowerInvariant()">
+            <span style="width: @GetPercent(value, total)%"></span>
+        </div>
+    </div>;
+
+    private static int GetPercent(int value, int total)
+    {
+        return total == 0 ? 0 : Math.Max(4, value * 100 / total);
+    }
+
+    private static string GetVenueList(Event item)
+    {
+        var names = item.EventVenues
+            .Where(eventVenue => eventVenue.Venue is not null)
+            .Select(eventVenue => eventVenue.Venue!.VenueName)
+            .ToList();
+
+        return names.Count == 0 ? "No venue" : string.Join(", ", names);
     }
 }

@@ -13,38 +13,80 @@
 }
 else
 {
-    <h1>@eventItem.EventName</h1>
-    <p class="lead">@eventItem.Description</p>
+    <section class="event-detail-hero">
+        <div class="event-detail-date">
+            <strong>@eventItem.EventDate.ToString("dd")</strong>
+            <span>@eventItem.EventDate.ToString("MMM yyyy")</span>
+        </div>
+        <div>
+            <p class="eyebrow">Event details</p>
+            <h1>@eventItem.EventName</h1>
+            <p class="lead">@eventItem.Description</p>
+            <div class="event-detail-tags">
+                @foreach (var activity in GetActivities())
+                {
+                    <span>@activity</span>
+                }
+            </div>
+        </div>
+    </section>
 
-    <dl class="row">
-        <dt class="col-sm-3">Date</dt>
-        <dd class="col-sm-9">@eventItem.EventDate.ToString("dd MMM yyyy")</dd>
-        <dt class="col-sm-3">Time</dt>
-        <dd class="col-sm-9">@eventItem.StartTime.ToString(@"hh\:mm") - @eventItem.EndTime.ToString(@"hh\:mm")</dd>
-        <dt class="col-sm-3">Venues</dt>
-        <dd class="col-sm-9">@GetVenueList()</dd>
-        <dt class="col-sm-3">Activities</dt>
-        <dd class="col-sm-9">@GetActivityList()</dd>
-    </dl>
+    <div class="event-detail-layout">
+        <section class="event-detail-main">
+            <div class="event-info-grid">
+                <article>
+                    <span>Date</span>
+                    <strong>@eventItem.EventDate.ToString("dddd, dd MMM yyyy")</strong>
+                </article>
+                <article>
+                    <span>Time</span>
+                    <strong>@eventItem.StartTime.ToString(@"hh\:mm") - @eventItem.EndTime.ToString(@"hh\:mm")</strong>
+                </article>
+                <article>
+                    <span>Venue</span>
+                    <strong>@GetVenueList()</strong>
+                </article>
+                <article>
+                    <span>Activities</span>
+                    <strong>@GetActivityList()</strong>
+                </article>
+            </div>
 
-    <div class="card">
-        <div class="card-body">
-            <h2 class="h5">Register for this event</h2>
+            <section class="event-description-panel">
+                <h2>About this event</h2>
+                <p>@eventItem.Description</p>
+            </section>
+        </section>
+
+        <aside class="event-register-panel">
+            <div class="event-register-header">
+                <span>@GetRegistrationCount() / @eventItem.MaxParticipants</span>
+                <p>registered</p>
+            </div>
+            <div class="event-capacity-bar mb-3">
+                <span style="width: @GetCapacityPercent()%"></span>
+            </div>
+
             @if (!string.IsNullOrWhiteSpace(message))
             {
                 <div class="alert @messageClass">@message</div>
             }
+
             <AuthorizeView Roles="Participant">
                 <Authorized>
-                    <button class="btn btn-primary" @onclick="Register">Register me</button>
-                    <a class="btn btn-outline-secondary ms-2" href="/my-registrations">My registrations</a>
+                    <button class="btn btn-primary w-100" @onclick="Register" disabled="@IsFull">Register me</button>
+                    <a class="btn btn-outline-secondary w-100 mt-2" href="/my-registrations">My registrations</a>
+                    @if (IsFull)
+                    {
+                        <p class="event-register-note">This event is currently full.</p>
+                    }
                 </Authorized>
                 <NotAuthorized>
-                    <a class="btn btn-primary" href="/account/login">Login to register</a>
-                    <a class="btn btn-outline-secondary ms-2" href="/account/register">Create participant account</a>
+                    <a class="btn btn-primary w-100" href="/account/login">Login to register</a>
+                    <p class="event-register-note">Use the Sign Up tab on the login page if you do not have an account yet.</p>
                 </NotAuthorized>
             </AuthorizeView>
-        </div>
+        </aside>
     </div>
 }
 
@@ -56,6 +98,7 @@ else
     private int participantId;
     private string message = string.Empty;
     private string messageClass = "alert-success";
+    private bool IsFull => eventItem is not null && GetRegistrationCount() >= eventItem.MaxParticipants;
 
     protected override async Task OnInitializedAsync()
     {
@@ -89,6 +132,21 @@ else
         }
     }
 
+    private int GetRegistrationCount()
+    {
+        return eventItem?.Registrations.Count(registration => registration.Status != RegistrationStatus.Cancelled) ?? 0;
+    }
+
+    private int GetCapacityPercent()
+    {
+        if (eventItem is null || eventItem.MaxParticipants <= 0)
+        {
+            return 0;
+        }
+
+        return Math.Min(100, GetRegistrationCount() * 100 / eventItem.MaxParticipants);
+    }
+
     private string GetVenueList()
     {
         var venues = eventItem?.EventVenues
@@ -101,11 +159,15 @@ else
 
     private string GetActivityList()
     {
-        var activities = eventItem?.EventActivities
+        var activities = GetActivities();
+        return activities.Count == 0 ? "No activities assigned" : string.Join(", ", activities);
+    }
+
+    private List<string> GetActivities()
+    {
+        return eventItem?.EventActivities
             .Where(eventActivity => eventActivity.Activity is not null)
             .Select(eventActivity => eventActivity.Activity!.ActivityName)
             .ToList() ?? new List<string>();
-
-        return activities.Count == 0 ? "No activities assigned" : string.Join(", ", activities);
     }
 }

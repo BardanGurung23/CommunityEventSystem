@@ -4,21 +4,40 @@
 
 <PageTitle>Reports</PageTitle>
 
-<h1>Reports</h1>
+<section class="reports-hero">
+    <div>
+        <p class="eyebrow">Analytics</p>
+        <h1>Reports</h1>
+        <p class="lead">Track event registrations, venue usage, and activity demand across the community programme.</p>
+    </div>
+    <div class="reports-hero-metric">
+        <span>@TotalEventRegistrations</span>
+        <p>Total active registrations</p>
+    </div>
+</section>
 
-<div class="row g-4">
-    <div class="col-lg-4">
-        <h2 class="h5">Event registration count</h2>
-        <ReportList Items="eventCounts" />
-    </div>
-    <div class="col-lg-4">
-        <h2 class="h5">Venue usage</h2>
-        <ReportList Items="venueUsage" />
-    </div>
-    <div class="col-lg-4">
-        <h2 class="h5">Activity popularity</h2>
-        <ReportList Items="activityPopularity" />
-    </div>
+<div class="report-kpi-grid">
+    <article class="report-kpi-card">
+        <p>Top event</p>
+        <strong>@TopEventName</strong>
+        <span>@TopEventCount registration@(TopEventCount == 1 ? string.Empty : "s")</span>
+    </article>
+    <article class="report-kpi-card">
+        <p>Most used venue</p>
+        <strong>@TopVenueName</strong>
+        <span>@TopVenueCount scheduled event@(TopVenueCount == 1 ? string.Empty : "s")</span>
+    </article>
+    <article class="report-kpi-card">
+        <p>Popular activity</p>
+        <strong>@TopActivityName</strong>
+        <span>@TopActivityCount linked event@(TopActivityCount == 1 ? string.Empty : "s")</span>
+    </article>
+</div>
+
+<div class="report-grid">
+    @ReportCard("Event registration count", "Confirmed and pending participant demand by event.", eventCounts, "registrations")
+    @ReportCard("Venue usage", "How often each venue is assigned to events.", venueUsage, "uses")
+    @ReportCard("Activity popularity", "Activities most often linked to scheduled events.", activityPopularity, "events")
 </div>
 
 @code {
@@ -26,10 +45,69 @@
     private Dictionary<string, int> venueUsage = new();
     private Dictionary<string, int> activityPopularity = new();
 
+    private int TotalEventRegistrations => eventCounts.Values.Sum();
+    private string TopEventName => GetTopName(eventCounts);
+    private int TopEventCount => GetTopCount(eventCounts);
+    private string TopVenueName => GetTopName(venueUsage);
+    private int TopVenueCount => GetTopCount(venueUsage);
+    private string TopActivityName => GetTopName(activityPopularity);
+    private int TopActivityCount => GetTopCount(activityPopularity);
+
     protected override async Task OnInitializedAsync()
     {
         eventCounts = await ReportService.GetEventRegistrationCountsAsync();
         venueUsage = await ReportService.GetVenueUsageCountsAsync();
         activityPopularity = await ReportService.GetActivityPopularityCountsAsync();
+    }
+
+    private RenderFragment ReportCard(string title, string description, Dictionary<string, int> items, string unit) => @<article class="report-card">
+        <div class="report-card-header">
+            <div>
+                <h2>@title</h2>
+                <p>@description</p>
+            </div>
+            <span>@items.Values.Sum()</span>
+        </div>
+
+        @if (items.Count == 0)
+        {
+            <div class="report-empty">No report data yet.</div>
+        }
+        else
+        {
+            <div class="report-list">
+                @foreach (var item in OrderedItems(items))
+                {
+                    var max = Math.Max(1, items.Values.Max());
+                    var width = item.Value * 100 / max;
+                    <div class="report-row">
+                        <div class="report-row-top">
+                            <strong>@item.Key</strong>
+                            <span>@item.Value @unit</span>
+                        </div>
+                        <div class="report-bar" aria-hidden="true">
+                            <span style="width: @width%"></span>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </article>;
+
+    private static IEnumerable<KeyValuePair<string, int>> OrderedItems(Dictionary<string, int> items)
+    {
+        return items
+            .OrderByDescending(item => item.Value)
+            .ThenBy(item => item.Key);
+    }
+
+    private static string GetTopName(Dictionary<string, int> items)
+    {
+        return OrderedItems(items).FirstOrDefault().Key ?? "No data";
+    }
+
+    private static int GetTopCount(Dictionary<string, int> items)
+    {
+        return OrderedItems(items).FirstOrDefault().Value;
     }
 }

@@ -1,47 +1,146 @@
 @page "/"
+@inject IEventService EventService
+@inject IParticipantService ParticipantService
+@inject IVenueService VenueService
+@inject IActivityService ActivityService
 
 <PageTitle>Community Event Management</PageTitle>
 
-<section class="page-hero">
-    <div>
-        <p class="eyebrow">CET254 Advanced Programming</p>
-        <h1>Community Event Management</h1>
-        <p class="lead">A Blazor Server system for managing community events, venues, activities, participants, registrations, and reports.</p>
-        <div class="d-flex gap-2 flex-wrap">
+<section class="home-hero">
+    <div class="home-hero-copy">
+        <p class="eyebrow">Community Event Management</p>
+        <h1>Plan, discover, and register for local community events.</h1>
+        <p class="lead">A Blazor system for organising events, assigning venues and activities, managing participants, and tracking registrations.</p>
+        <div class="home-actions">
             <a class="btn btn-primary" href="events">Browse events</a>
-            <a class="btn btn-outline-primary" href="account/login">Login</a>
-            <a class="btn btn-outline-secondary" href="account/register">Register participant</a>
+            <AuthorizeView>
+                <Authorized Context="mainAuth">
+                    <AuthorizeView Roles="Admin">
+                        <Authorized Context="adminAuth">
+                            <a class="btn btn-outline-primary" href="admin/dashboard">Admin dashboard</a>
+                        </Authorized>
+                    </AuthorizeView>
+                    <AuthorizeView Roles="Participant">
+                        <Authorized Context="participantAuth">
+                            <a class="btn btn-outline-primary" href="my-registrations">My registrations</a>
+                        </Authorized>
+                    </AuthorizeView>
+                    <a class="btn btn-outline-secondary" href="account/logout">Logout</a>
+                </Authorized>
+                <NotAuthorized>
+                    <a class="btn btn-outline-primary" href="account/login">Login / Sign up</a>
+                </NotAuthorized>
+            </AuthorizeView>
         </div>
     </div>
+
+    <aside class="home-spotlight">
+        <p>Next event</p>
+        @if (nextEvent is null)
+        {
+            <h2>No upcoming event yet</h2>
+            <span>Admin can create the first event from the dashboard.</span>
+        }
+        else
+        {
+            <div class="home-date-tile">
+                <strong>@nextEvent.EventDate.ToString("dd")</strong>
+                <span>@nextEvent.EventDate.ToString("MMM")</span>
+            </div>
+            <h2>@nextEvent.EventName</h2>
+            <span>@nextEvent.StartTime.ToString(@"hh\:mm") - @nextEvent.EndTime.ToString(@"hh\:mm")</span>
+            <a href="@($"/events/details/{nextEvent.Id}")">View event</a>
+        }
+    </aside>
 </section>
 
-<div class="row g-3 mt-2">
-    <div class="col-md-4">
-        <div class="card h-100">
-            <div class="card-body">
-                <h2 class="h5">Admin</h2>
-                <p>Manage events, assign venues and activities, approve registrations, and review reports.</p>
-                <a href="admin/dashboard">Open dashboard</a>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card h-100">
-            <div class="card-body">
-                <h2 class="h5">Participants</h2>
-                <p>Browse upcoming events, register with one click, and cancel your own registrations.</p>
-                <a href="events">View upcoming events</a>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card h-100">
-            <div class="card-body">
-                <h2 class="h5">Demo login</h2>
-                <p class="mb-1"><strong>Admin:</strong> admin@community.test</p>
-                <p class="mb-1"><strong>Password:</strong> admin123</p>
-                <p class="mb-0"><strong>Participant:</strong> asha@example.com</p>
-            </div>
-        </div>
-    </div>
+<div class="home-stat-grid">
+    <article>
+        <strong>@eventCount</strong>
+        <span>Events</span>
+    </article>
+    <article>
+        <strong>@participantCount</strong>
+        <span>Participants</span>
+    </article>
+    <article>
+        <strong>@venueCount</strong>
+        <span>Venues</span>
+    </article>
+    <article>
+        <strong>@activityCount</strong>
+        <span>Activities</span>
+    </article>
 </div>
+
+<section class="home-section">
+    <div class="home-section-header">
+        <div>
+            <p class="eyebrow">Explore</p>
+            <h2>Upcoming events</h2>
+        </div>
+        <a href="events">View all</a>
+    </div>
+
+    @if (upcomingEvents.Count == 0)
+    {
+        <div class="event-empty-state">No upcoming events are available yet.</div>
+    }
+    else
+    {
+        <div class="home-event-strip">
+            @foreach (var item in upcomingEvents.Take(3))
+            {
+                <article class="home-event-card">
+                    <div class="home-date-tile compact">
+                        <strong>@item.EventDate.ToString("dd")</strong>
+                        <span>@item.EventDate.ToString("MMM")</span>
+                    </div>
+                    <h3>@item.EventName</h3>
+                    <p>@item.Description</p>
+                    <a href="@($"/events/details/{item.Id}")">Details</a>
+                </article>
+            }
+        </div>
+    }
+</section>
+
+<section class="home-path-grid">
+    <article>
+        <span>01</span>
+        <h2>Participants</h2>
+        <p>Browse events, register, and manage your own registrations.</p>
+        <a href="events">Find events</a>
+    </article>
+    <article>
+        <span>02</span>
+        <h2>Admins</h2>
+        <p>Create events, assign venues, manage activities, and approve registrations.</p>
+        <a href="admin/dashboard">Open dashboard</a>
+    </article>
+    <article>
+        <span>03</span>
+        <h2>Reports</h2>
+        <p>Review registrations, venue usage, and activity popularity from one place.</p>
+        <a href="admin/reports">View reports</a>
+    </article>
+</section>
+
+@code {
+    private List<Event> upcomingEvents = new();
+    private Event? nextEvent;
+    private int eventCount;
+    private int participantCount;
+    private int venueCount;
+    private int activityCount;
+
+    protected override async Task OnInitializedAsync()
+    {
+        upcomingEvents = await EventService.GetUpcomingEventsAsync();
+        nextEvent = upcomingEvents.FirstOrDefault();
+        eventCount = (await EventService.GetEventsAsync()).Count;
+        participantCount = (await ParticipantService.GetParticipantsAsync()).Count;
+        venueCount = (await VenueService.GetVenuesAsync()).Count;
+        activityCount = (await ActivityService.GetActivitiesAsync()).Count;
+    }
+}

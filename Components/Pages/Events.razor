@@ -4,54 +4,94 @@
 
 <PageTitle>Upcoming Events</PageTitle>
 
-<h1>Upcoming Events</h1>
+<section class="events-hero">
+    <div>
+        <p class="eyebrow">Community programme</p>
+        <h1>Upcoming Events</h1>
+        <p class="lead">Find local activities, workshops, and volunteering opportunities open for registration.</p>
+    </div>
+    <div class="events-hero-stat">
+        <strong>@(events?.Count ?? 0)</strong>
+        <span>events listed</span>
+    </div>
+</section>
 
-<div class="row g-3 mb-4">
-    <div class="col-md-4">
-        <label class="form-label" for="eventDate">Filter by date</label>
+<section class="event-filter-panel">
+    <div>
+        <label class="form-label" for="eventDate">Date</label>
         <InputDate id="eventDate" class="form-control" @bind-Value="filterDate" />
     </div>
-    <div class="col-md-3">
-        <label class="form-label" for="venueName">Filter by venue</label>
-        <InputText id="venueName" class="form-control" @bind-Value="venueName" />
+    <div>
+        <label class="form-label" for="venueName">Venue</label>
+        <InputText id="venueName" class="form-control" @bind-Value="venueName" placeholder="Search venue" />
     </div>
-    <div class="col-md-3">
-        <label class="form-label" for="activityType">Filter by activity type</label>
-        <InputText id="activityType" class="form-control" @bind-Value="activityType" />
+    <div>
+        <label class="form-label" for="activityType">Activity type</label>
+        <InputText id="activityType" class="form-control" @bind-Value="activityType" placeholder="Education, volunteering..." />
     </div>
-    <div class="col-md-2 d-flex align-items-end gap-2">
+    <div class="event-filter-actions">
         <button class="btn btn-primary" @onclick="ApplyFilters">Filter</button>
         <button class="btn btn-outline-secondary" @onclick="ClearFilters">Clear</button>
     </div>
-</div>
+</section>
 
 @if (events is null)
 {
-    <p>Loading events...</p>
+    <div class="event-empty-state">Loading events...</div>
 }
 else if (events.Count == 0)
 {
-    <div class="alert alert-info">No upcoming events found.</div>
+    <div class="event-empty-state">No upcoming events found. Try clearing the filters.</div>
 }
 else
 {
-    <div class="row g-3">
+    <div class="event-showcase-grid">
         @foreach (var eventItem in events)
         {
-            <div class="col-md-6 col-xl-4">
-                <div class="card h-100 event-card">
-                    <div class="card-body">
-                        <h2 class="h5">@eventItem.EventName</h2>
-                        <p class="text-muted mb-2">@eventItem.EventDate.ToString("dd MMM yyyy") · @eventItem.StartTime.ToString(@"hh\:mm")</p>
-                        <p>@eventItem.Description</p>
-                        <p class="mb-1"><strong>Capacity:</strong> @eventItem.Registrations.Count(r => r.Status != RegistrationStatus.Cancelled) / @eventItem.MaxParticipants</p>
-                        <p class="mb-0"><strong>Venue:</strong> @GetVenueList(eventItem)</p>
+            <article class="event-showcase-card">
+                <div class="event-card-topline">
+                    <div class="event-date-badge">
+                        <strong>@eventItem.EventDate.ToString("dd")</strong>
+                        <span>@eventItem.EventDate.ToString("MMM")</span>
                     </div>
-                    <div class="card-footer bg-white">
-                        <a class="btn btn-sm btn-outline-primary" href="@($"/events/details/{eventItem.Id}")">View details</a>
+                    <span class="event-status-pill">@GetCapacityText(eventItem)</span>
+                </div>
+
+                <div class="event-card-body">
+                    <h2>@eventItem.EventName</h2>
+                    <p>@eventItem.Description</p>
+                </div>
+
+                <div class="event-meta-grid">
+                    <div>
+                        <span>Time</span>
+                        <strong>@eventItem.StartTime.ToString(@"hh\:mm") - @eventItem.EndTime.ToString(@"hh\:mm")</strong>
+                    </div>
+                    <div>
+                        <span>Venue</span>
+                        <strong>@GetVenueList(eventItem)</strong>
                     </div>
                 </div>
-            </div>
+
+                <div class="event-chip-row">
+                    @foreach (var activity in GetActivities(eventItem).Take(3))
+                    {
+                        <span>@activity</span>
+                    }
+                </div>
+
+                <div class="event-capacity">
+                    <div>
+                        <span>Capacity</span>
+                        <strong>@GetRegistrationCount(eventItem) / @eventItem.MaxParticipants</strong>
+                    </div>
+                    <div class="event-capacity-bar">
+                        <span style="width: @GetCapacityPercent(eventItem)%"></span>
+                    </div>
+                </div>
+
+                <a class="btn btn-primary w-100" href="@($"/events/details/{eventItem.Id}")">View details</a>
+            </article>
         }
     </div>
 }
@@ -98,6 +138,26 @@ else
         events = await EventService.GetUpcomingEventsAsync();
     }
 
+    private static int GetRegistrationCount(Event eventItem)
+    {
+        return eventItem.Registrations.Count(registration => registration.Status != RegistrationStatus.Cancelled);
+    }
+
+    private static int GetCapacityPercent(Event eventItem)
+    {
+        if (eventItem.MaxParticipants <= 0)
+        {
+            return 0;
+        }
+
+        return Math.Min(100, GetRegistrationCount(eventItem) * 100 / eventItem.MaxParticipants);
+    }
+
+    private static string GetCapacityText(Event eventItem)
+    {
+        return GetRegistrationCount(eventItem) >= eventItem.MaxParticipants ? "Full" : "Open";
+    }
+
     private static string GetVenueList(Event eventItem)
     {
         var venues = eventItem.EventVenues
@@ -106,5 +166,13 @@ else
             .ToList();
 
         return venues.Count == 0 ? "To be confirmed" : string.Join(", ", venues);
+    }
+
+    private static List<string> GetActivities(Event eventItem)
+    {
+        return eventItem.EventActivities
+            .Where(eventActivity => eventActivity.Activity is not null)
+            .Select(eventActivity => eventActivity.Activity!.ActivityName)
+            .ToList();
     }
 }
