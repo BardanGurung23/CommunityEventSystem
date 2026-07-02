@@ -1,47 +1,46 @@
 .navbar-toggler {
     appearance: none;
     cursor: pointer;
-    width: 3.5rem;
-    height: 2.5rem;
+    width: 3.25rem;
+    height: 2.3rem;
     position: absolute;
     top: 0.75rem;
     right: 1rem;
-    border: 1px solid rgba(255, 255, 255, 0.72);
-    border-radius: 18px;
-    box-shadow: 7px 8px 16px rgba(88, 111, 145, 0.18), -5px -5px 14px rgba(255, 255, 255, 0.8);
-    background: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%2847, 67, 96, 0.78%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2.5' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e") no-repeat center/1.55rem rgba(255, 255, 255, 0.58);
+    border: 1px solid #d9dee5;
+    border-radius: 8px;
+    background: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%2832, 40, 51, 0.78%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2.2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e") no-repeat center/1.45rem #ffffff;
 }
 
 .navbar-toggler:checked {
-    box-shadow: inset 5px 5px 12px rgba(88, 111, 145, 0.16), inset -5px -5px 12px rgba(255, 255, 255, 0.86);
+    background-color: #f1f3f5;
 }
 
 .top-row {
-    height: 4rem;
+    height: 3.75rem;
     background: transparent;
 }
 
 .navbar-brand {
-    color: #253349;
-    font-size: 1.06rem;
-    font-weight: 850;
+    color: #202833;
+    font-size: 1rem;
+    font-weight: 750;
     letter-spacing: 0;
 }
 
 .navbar-brand:hover {
-    color: #315bd8;
+    color: #1d4ed8;
     text-decoration: none;
 }
 
 .bi {
     display: inline-block;
     position: relative;
-    width: 1.1rem;
-    height: 1.1rem;
-    margin-right: 0.72rem;
+    width: 1rem;
+    height: 1rem;
+    margin-right: 0.65rem;
     top: -1px;
     background-size: cover;
-    filter: invert(31%) sepia(18%) saturate(724%) hue-rotate(176deg) brightness(88%) contrast(87%);
+    filter: invert(37%) sepia(12%) saturate(767%) hue-rotate(178deg) brightness(90%) contrast(88%);
 }
 
 .bi-house-door-fill-nav-menu,
@@ -51,12 +50,12 @@
 }
 
 .nav-item {
-    font-size: 0.92rem;
-    padding: 0 0.8rem 0.55rem;
+    font-size: 0.9rem;
+    padding: 0 0.75rem 0.35rem;
 }
 
 .nav-item:first-of-type {
-    padding-top: 1rem;
+    padding-top: 0.8rem;
 }
 
 .nav-item:last-of-type {
@@ -64,30 +63,28 @@
 }
 
 .nav-item ::deep .nav-link {
-    color: #4d5d73;
-    background: rgba(255, 255, 255, 0.44);
-    border: 1px solid rgba(255, 255, 255, 0.62);
-    border-radius: 20px;
-    min-height: 2.85rem;
+    color: #4f5d6f;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    min-height: 2.55rem;
     display: flex;
     align-items: center;
     line-height: 1.2;
     width: 100%;
-    padding: 0.65rem 0.9rem;
-    box-shadow: 5px 6px 13px rgba(88, 111, 145, 0.13), -4px -4px 12px rgba(255, 255, 255, 0.7);
+    padding: 0.55rem 0.75rem;
 }
 
 .nav-item ::deep a.active {
-    color: #244bbd;
-    background: linear-gradient(145deg, rgba(255, 255, 255, 0.86), rgba(235, 244, 255, 0.86));
-    box-shadow: inset 4px 4px 10px rgba(88, 111, 145, 0.14), inset -4px -4px 10px rgba(255, 255, 255, 0.84);
+    color: #1d4ed8;
+    background: #eef2ff;
+    border-color: #d8e0ff;
 }
 
 .nav-item ::deep .nav-link:hover {
-    color: #244bbd;
-    background: rgba(255, 255, 255, 0.72);
+    color: #1d4ed8;
+    background: #f1f3f5;
     text-decoration: none;
-    transform: translateY(-1px);
 }
 
 .nav-scrollable {
@@ -105,7 +102,7 @@
 
     .nav-scrollable {
         display: block;
-        height: calc(100vh - 4rem);
+        height: calc(100vh - 3.75rem);
         overflow-y: auto;
         padding-bottom: 1rem;
     }

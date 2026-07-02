@@ -11,20 +11,17 @@ main {
 }
 
 .sidebar {
-    background: linear-gradient(180deg, #dcecff 0%, #f7eaff 52%, #e5fbf7 100%);
-    border-right: 1px solid rgba(255, 255, 255, 0.78);
-    box-shadow: 10px 0 28px rgba(88, 111, 145, 0.14);
+    background: #ffffff;
+    border-right: 1px solid #d9dee5;
 }
 
 .top-row {
-    background: rgba(248, 251, 255, 0.72);
-    backdrop-filter: blur(14px);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.78);
+    background: #ffffff;
+    border-bottom: 1px solid #d9dee5;
     justify-content: flex-end;
-    height: 4rem;
+    height: 3.75rem;
     display: flex;
     align-items: center;
-    box-shadow: 0 8px 20px rgba(88, 111, 145, 0.08);
 }
 
 .top-row ::deep a,
@@ -66,7 +63,7 @@ article.content {
     }
 
     .sidebar {
-        width: 280px;
+        width: 260px;
         height: 100vh;
         position: sticky;
         top: 0;
@@ -92,11 +89,9 @@ article.content {
 }
 
 #blazor-error-ui {
-    background: #fff6dc;
-    border: 1px solid rgba(255, 255, 255, 0.78);
-    border-radius: 18px 18px 0 0;
+    background: #fff7df;
+    border-top: 1px solid #f3df9b;
     bottom: 0;
-    box-shadow: 0 -8px 24px rgba(88, 111, 145, 0.18);
     display: none;
     left: 0;
     padding: 0.75rem 1.25rem;
