@@ -1,12 +1,47 @@
-﻿@page "/"
+@page "/"
 
 <PageTitle>Community Event Management</PageTitle>
 
-<h1>Community Event Management</h1>
+<section class="page-hero">
+    <div>
+        <p class="eyebrow">CET254 Advanced Programming</p>
+        <h1>Community Event Management</h1>
+        <p class="lead">A Blazor Server system for managing community events, venues, activities, participants, registrations, and reports.</p>
+        <div class="d-flex gap-2 flex-wrap">
+            <a class="btn btn-primary" href="events">Browse events</a>
+            <a class="btn btn-outline-primary" href="account/login">Login</a>
+            <a class="btn btn-outline-secondary" href="account/register">Register participant</a>
+        </div>
+    </div>
+</section>
 
-<p class="lead">Manage community events, participants, venues, activities, and registrations from one Blazor Server application.</p>
-
-<div class="d-flex gap-2 flex-wrap">
-    <a class="btn btn-primary" href="events">View events</a>
-    <a class="btn btn-outline-primary" href="admin/dashboard">Admin dashboard</a>
+<div class="row g-3 mt-2">
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h5">Admin</h2>
+                <p>Manage events, assign venues and activities, approve registrations, and review reports.</p>
+                <a href="admin/dashboard">Open dashboard</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h5">Participants</h2>
+                <p>Browse upcoming events, register with one click, and cancel your own registrations.</p>
+                <a href="events">View upcoming events</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h5">Demo login</h2>
+                <p class="mb-1"><strong>Admin:</strong> admin@community.test</p>
+                <p class="mb-1"><strong>Password:</strong> admin123</p>
+                <p class="mb-0"><strong>Participant:</strong> asha@example.com</p>
+            </div>
+        </div>
+    </div>
 </div>

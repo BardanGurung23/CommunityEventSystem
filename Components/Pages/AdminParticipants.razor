@@ -51,6 +51,7 @@
             <td>@item.PhoneNumber</td>
             <td>@(item.IsActive ? "Active" : "Inactive")</td>
             <td class="text-end">
+                <a class="btn btn-sm btn-outline-primary me-2" href="@($"/admin/participants/details/{item.Id}")">Details</a>
                 <a class="btn btn-sm btn-outline-secondary me-2" href="@($"/admin/participants/edit/{item.Id}")">Edit</a>
                 <button class="btn btn-sm btn-outline-danger" @onclick="() => Deactivate(item.Id)" disabled="@(!item.IsActive)">Deactivate</button>
             </td>

@@ -2,6 +2,8 @@
 @attribute [Authorize(Roles = AuthConstants.AdminRole)]
 @rendermode InteractiveServer
 @inject IEventService EventService
+@inject IVenueService VenueService
+@inject IActivityService ActivityService
 @inject NavigationManager NavigationManager
 
 <PageTitle>Edit Event</PageTitle>
@@ -44,6 +46,26 @@ else
                     <label class="form-label" for="endTime">End time</label>
                     <InputText id="endTime" class="form-control" @bind-Value="endTimeText" />
                 </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="venue">Venue</label>
+                    <select id="venue" class="form-select" ="selectedVenueId">
+                        <option value="0">Choose venue</option>
+                         (var venue in venues.Where(venue => venue.IsAvailable || venue.Id == selectedVenueId))
+                        {
+                            <option value=".Id">.VenueName</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="activity">Activity</label>
+                    <select id="activity" class="form-select" ="selectedActivityId">
+                        <option value="0">Choose activity</option>
+                         (var activity in activities.Where(activity => activity.IsActive || activity.Id == selectedActivityId))
+                        {
+                            <option value=".Id">.ActivityName</option>
+                        }
+                    </select>
+                </div>
                 <div class="col-12">
                     <label class="form-label" for="description">Description</label>
                     <InputTextArea id="description" class="form-control" @bind-Value="eventModel.Description" />
@@ -65,15 +87,23 @@ else
     private string startTimeText = "09:00";
     private string endTimeText = "10:00";
     private string message = string.Empty;
+    private List<Venue> venues = new();
+    private List<Activity> activities = new();
+    private int selectedVenueId;
+    private int selectedActivityId;
 
     protected override async Task OnInitializedAsync()
     {
         eventModel = await EventService.GetEventByIdAsync(Id);
+        venues = await VenueService.GetVenuesAsync();
+        activities = await ActivityService.GetActivitiesAsync();
 
         if (eventModel is not null)
         {
             startTimeText = eventModel.StartTime.ToString(@"hh\:mm");
             endTimeText = eventModel.EndTime.ToString(@"hh\:mm");
+            selectedVenueId = eventModel.EventVenues.FirstOrDefault()?.VenueId ?? 0;
+            selectedActivityId = eventModel.EventActivities.FirstOrDefault()?.ActivityId ?? 0;
         }
     }
 
@@ -88,7 +118,9 @@ else
         {
             eventModel.StartTime = TimeSpan.Parse(startTimeText);
             eventModel.EndTime = TimeSpan.Parse(endTimeText);
-            await EventService.UpdateEventAsync(eventModel);
+            var venueIds = selectedVenueId > 0 ? new[] { selectedVenueId } : Array.Empty<int>();
+            var activityIds = selectedActivityId > 0 ? new[] { selectedActivityId } : Array.Empty<int>();
+            await EventService.UpdateEventAsync(eventModel, venueIds, activityIds);
             NavigationManager.NavigateTo("/admin/events");
         }
         catch (Exception ex)

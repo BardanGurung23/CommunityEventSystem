@@ -1,0 +1,57 @@
+@page "/admin/venues/details/{Id:int}"
+@attribute [Authorize(Roles = AuthConstants.AdminRole)]
+@inject IVenueService VenueService
+
+<PageTitle>Venue Details</PageTitle>
+
+@if (venue is null)
+{
+    <div class="alert alert-warning">Venue not found.</div>
+}
+else
+{
+    <h1>@venue.VenueName</h1>
+    <dl class="row">
+        <dt class="col-sm-3">Address</dt>
+        <dd class="col-sm-9">@venue.Address</dd>
+        <dt class="col-sm-3">Capacity</dt>
+        <dd class="col-sm-9">@venue.Capacity</dd>
+        <dt class="col-sm-3">Available</dt>
+        <dd class="col-sm-9">@(venue.IsAvailable ? "Yes" : "No")</dd>
+        <dt class="col-sm-3">Description</dt>
+        <dd class="col-sm-9">@venue.Description</dd>
+    </dl>
+
+    <h2 class="h5">Hosted events</h2>
+    @if (venue.EventVenues.Count == 0)
+    {
+        <div class="alert alert-info">No assigned events.</div>
+    }
+    else
+    {
+        <ul class="list-group mb-3">
+            @foreach (var eventVenue in venue.EventVenues)
+            {
+                <li class="list-group-item d-flex justify-content-between">
+                    <span>@eventVenue.Event?.EventName</span>
+                    <span>@eventVenue.Event?.EventDate.ToString("dd MMM yyyy")</span>
+                </li>
+            }
+        </ul>
+    }
+
+    <a class="btn btn-primary" href="@($"/admin/venues/edit/{venue.Id}")">Edit</a>
+    <a class="btn btn-outline-secondary ms-2" href="/admin/venues">Back</a>
+}
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private Venue? venue;
+
+    protected override async Task OnInitializedAsync()
+    {
+        venue = await VenueService.GetVenueByIdAsync(Id);
+    }
+}

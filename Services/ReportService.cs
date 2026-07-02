@@ -23,7 +23,8 @@ public class ReportService : IReportService
                 eventItem.EventName,
                 Count = eventItem.Registrations.Count(registration => registration.Status != RegistrationStatus.Cancelled)
             })
-            .ToDictionaryAsync(item => item.EventName, item => item.Count);
+            .GroupBy(item => item.EventName)
+            .ToDictionaryAsync(group => group.Key, group => group.Sum(item => item.Count));
     }
 
     public async Task<Dictionary<string, int>> GetVenueUsageCountsAsync()

@@ -13,5 +13,6 @@ public interface IEventService
     Task AddEventAsync(Event eventItem);
     Task AddEventAsync(Event eventItem, IEnumerable<int> venueIds, IEnumerable<int> activityIds);
     Task UpdateEventAsync(Event eventItem);
+    Task UpdateEventAsync(Event eventItem, IEnumerable<int> venueIds, IEnumerable<int> activityIds);
     Task DeactivateEventAsync(int id);
 }

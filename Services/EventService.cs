@@ -103,6 +103,44 @@ public class EventService : IEventService
         await _context.SaveChangesAsync();
     }
 
+    public async Task UpdateEventAsync(Event eventItem, IEnumerable<int> venueIds, IEnumerable<int> activityIds)
+    {
+        ValidateEvent(eventItem);
+
+        var existingEvent = await _context.Events
+            .Include(item => item.EventVenues)
+            .Include(item => item.EventActivities)
+            .FirstOrDefaultAsync(item => item.Id == eventItem.Id);
+
+        if (existingEvent is null)
+        {
+            throw new EventNotFoundException(eventItem.Id);
+        }
+
+        existingEvent.EventName = eventItem.EventName;
+        existingEvent.EventDate = eventItem.EventDate;
+        existingEvent.StartTime = eventItem.StartTime;
+        existingEvent.EndTime = eventItem.EndTime;
+        existingEvent.Description = eventItem.Description;
+        existingEvent.MaxParticipants = eventItem.MaxParticipants;
+        existingEvent.IsActive = eventItem.IsActive;
+        existingEvent.UpdatedAt = DateTime.UtcNow;
+
+        existingEvent.EventVenues.Clear();
+        foreach (var venueId in venueIds.ToHashSet())
+        {
+            existingEvent.EventVenues.Add(new EventVenue { EventId = existingEvent.Id, VenueId = venueId });
+        }
+
+        existingEvent.EventActivities.Clear();
+        foreach (var activityId in activityIds.ToHashSet())
+        {
+            existingEvent.EventActivities.Add(new EventActivity { EventId = existingEvent.Id, ActivityId = activityId });
+        }
+
+        await _context.SaveChangesAsync();
+    }
+
     public async Task DeactivateEventAsync(int id)
     {
         var eventItem = await _context.Events.FindAsync(id);

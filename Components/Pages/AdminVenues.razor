@@ -55,6 +55,7 @@
             <td>@item.Capacity</td>
             <td>@(item.IsAvailable ? "Yes" : "No")</td>
             <td class="text-end">
+                <a class="btn btn-sm btn-outline-primary me-2" href="@($"/admin/venues/details/{item.Id}")">Details</a>
                 <a class="btn btn-sm btn-outline-secondary me-2" href="@($"/admin/venues/edit/{item.Id}")">Edit</a>
                 <button class="btn btn-sm btn-outline-secondary" @onclick="() => ToggleAvailability(item)">Toggle</button>
             </td>

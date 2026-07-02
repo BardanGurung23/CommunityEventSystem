@@ -1,0 +1,67 @@
+@page "/admin/participants/details/{Id:int}"
+@attribute [Authorize(Roles = AuthConstants.AdminRole)]
+@inject IParticipantService ParticipantService
+
+<PageTitle>Participant Details</PageTitle>
+
+@if (participant is null)
+{
+    <div class="alert alert-warning">Participant not found.</div>
+}
+else
+{
+    <h1>@participant.FullName</h1>
+    <dl class="row">
+        <dt class="col-sm-3">Email</dt>
+        <dd class="col-sm-9">@participant.Email</dd>
+        <dt class="col-sm-3">Phone</dt>
+        <dd class="col-sm-9">@participant.PhoneNumber</dd>
+        <dt class="col-sm-3">Status</dt>
+        <dd class="col-sm-9">@(participant.IsActive ? "Active" : "Inactive")</dd>
+        <dt class="col-sm-3">Created</dt>
+        <dd class="col-sm-9">@participant.CreatedAt.ToString("dd MMM yyyy")</dd>
+    </dl>
+
+    <h2 class="h5">Registrations</h2>
+    @if (participant.Registrations.Count == 0)
+    {
+        <div class="alert alert-info">No registrations yet.</div>
+    }
+    else
+    {
+        <table class="table table-striped">
+            <thead>
+            <tr>
+                <th>Event</th>
+                <th>Date</th>
+                <th>Status</th>
+            </tr>
+            </thead>
+            <tbody>
+            @foreach (var registration in participant.Registrations)
+            {
+                <tr>
+                    <td>@registration.Event?.EventName</td>
+                    <td>@registration.Event?.EventDate.ToString("dd MMM yyyy")</td>
+                    <td>@registration.Status</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    }
+
+    <a class="btn btn-primary" href="@($"/admin/participants/edit/{participant.Id}")">Edit</a>
+    <a class="btn btn-outline-secondary ms-2" href="/admin/participants">Back</a>
+}
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private Participant? participant;
+
+    protected override async Task OnInitializedAsync()
+    {
+        participant = await ParticipantService.GetParticipantByIdAsync(Id);
+    }
+}
