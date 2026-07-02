@@ -3,6 +3,7 @@
 @inject IEventService EventService
 @inject IParticipantService ParticipantService
 @inject IRegistrationService RegistrationService
+@inject AuthenticationStateProvider AuthenticationStateProvider
 
 <PageTitle>Event Details</PageTitle>
 
@@ -28,26 +29,21 @@ else
 
     <div class="card">
         <div class="card-body">
-            <h2 class="h5">Register participant</h2>
+            <h2 class="h5">Register for this event</h2>
             @if (!string.IsNullOrWhiteSpace(message))
             {
                 <div class="alert @messageClass">@message</div>
             }
-            <div class="row g-3 align-items-end">
-                <div class="col-md-6">
-                    <label class="form-label" for="participant">Participant</label>
-                    <InputSelect id="participant" class="form-select" @bind-Value="participantId">
-                        <option value="0">Choose participant</option>
-                        @foreach (var participant in participants)
-                        {
-                            <option value="@participant.Id">@participant.FullName</option>
-                        }
-                    </InputSelect>
-                </div>
-                <div class="col-md-6">
-                    <button class="btn btn-primary" @onclick="Register">Register</button>
-                </div>
-            </div>
+            <AuthorizeView Roles="Participant">
+                <Authorized>
+                    <button class="btn btn-primary" @onclick="Register">Register me</button>
+                    <a class="btn btn-outline-secondary ms-2" href="/my-registrations">My registrations</a>
+                </Authorized>
+                <NotAuthorized>
+                    <a class="btn btn-primary" href="/account/login">Login to register</a>
+                    <a class="btn btn-outline-secondary ms-2" href="/account/register">Create participant account</a>
+                </NotAuthorized>
+            </AuthorizeView>
         </div>
     </div>
 }
@@ -57,7 +53,6 @@ else
     public int Id { get; set; }
 
     private Event? eventItem;
-    private List<Participant> participants = new();
     private int participantId;
     private string message = string.Empty;
     private string messageClass = "alert-success";
@@ -65,16 +60,17 @@ else
     protected override async Task OnInitializedAsync()
     {
         eventItem = await EventService.GetEventByIdAsync(Id);
-        participants = (await ParticipantService.GetParticipantsAsync())
-            .Where(participant => participant.IsActive)
-            .ToList();
+
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var participantClaim = authState.User.FindFirst(AuthConstants.ParticipantIdClaim)?.Value;
+        int.TryParse(participantClaim, out participantId);
     }
 
     private async Task Register()
     {
         if (participantId <= 0)
         {
-            message = "Choose a participant before registering.";
+            message = "Login as a participant before registering.";
             messageClass = "alert-warning";
             return;
         }

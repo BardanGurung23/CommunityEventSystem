@@ -40,6 +40,16 @@ public class EventService : IEventService
             .ToListAsync();
     }
 
+    public async Task<List<Event>> GetEventsByActivityTypeAsync(string activityType)
+    {
+        return await BaseEventQuery()
+            .Where(eventItem => eventItem.EventActivities
+                .Any(eventActivity => eventActivity.Activity != null &&
+                                      eventActivity.Activity.ActivityType.Contains(activityType)))
+            .OrderBy(eventItem => eventItem.EventDate)
+            .ToListAsync();
+    }
+
     public async Task<List<Event>> GetUpcomingEventsAsync()
     {
         return await BaseEventQuery()

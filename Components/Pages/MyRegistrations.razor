@@ -1,0 +1,65 @@
+@page "/my-registrations"
+@attribute [Authorize(Roles = AuthConstants.ParticipantRole)]
+@inject IRegistrationService RegistrationService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<PageTitle>My Registrations</PageTitle>
+
+<h1>My Registrations</h1>
+
+@if (registrations.Count == 0)
+{
+    <div class="alert alert-info">You have not registered for any events yet.</div>
+}
+else
+{
+    <table class="table table-striped align-middle">
+        <thead>
+        <tr>
+            <th>Event</th>
+            <th>Date</th>
+            <th>Status</th>
+            <th></th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var registration in registrations)
+        {
+            <tr>
+                <td>@registration.Event?.EventName</td>
+                <td>@registration.Event?.EventDate.ToString("dd MMM yyyy")</td>
+                <td>@registration.Status</td>
+                <td class="text-end">
+                    <button class="btn btn-sm btn-outline-danger"
+                            @onclick="() => Cancel(registration.Id)"
+                            disabled="@(registration.Status == RegistrationStatus.Cancelled)">
+                        Cancel
+                    </button>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<Registration> registrations = new();
+    private int participantId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var participantClaim = authState.User.FindFirst(AuthConstants.ParticipantIdClaim)?.Value;
+
+        if (int.TryParse(participantClaim, out participantId))
+        {
+            registrations = await RegistrationService.GetRegistrationsForParticipantAsync(participantId);
+        }
+    }
+
+    private async Task Cancel(int registrationId)
+    {
+        await RegistrationService.CancelRegistrationAsync(registrationId);
+        registrations = await RegistrationService.GetRegistrationsForParticipantAsync(participantId);
+    }
+}

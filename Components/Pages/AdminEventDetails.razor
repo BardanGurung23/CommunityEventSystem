@@ -1,0 +1,66 @@
+@page "/admin/events/details/{Id:int}"
+@attribute [Authorize(Roles = AuthConstants.AdminRole)]
+@inject IEventService EventService
+
+<PageTitle>Event Details</PageTitle>
+
+@if (eventItem is null)
+{
+    <div class="alert alert-warning">Event not found.</div>
+}
+else
+{
+    <h1>@eventItem.EventName</h1>
+
+    <dl class="row">
+        <dt class="col-sm-3">Date</dt>
+        <dd class="col-sm-9">@eventItem.EventDate.ToString("dd MMM yyyy")</dd>
+        <dt class="col-sm-3">Time</dt>
+        <dd class="col-sm-9">@eventItem.StartTime.ToString(@"hh\:mm") - @eventItem.EndTime.ToString(@"hh\:mm")</dd>
+        <dt class="col-sm-3">Max participants</dt>
+        <dd class="col-sm-9">@eventItem.MaxParticipants</dd>
+        <dt class="col-sm-3">Active registrations</dt>
+        <dd class="col-sm-9">@eventItem.Registrations.Count(r => r.Status != RegistrationStatus.Cancelled)</dd>
+        <dt class="col-sm-3">Venues</dt>
+        <dd class="col-sm-9">@JoinVenues()</dd>
+        <dt class="col-sm-3">Activities</dt>
+        <dd class="col-sm-9">@JoinActivities()</dd>
+        <dt class="col-sm-3">Description</dt>
+        <dd class="col-sm-9">@eventItem.Description</dd>
+    </dl>
+
+    <a class="btn btn-primary" href="@($"/admin/events/edit/{eventItem.Id}")">Edit</a>
+    <a class="btn btn-outline-secondary ms-2" href="/admin/events">Back</a>
+}
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private Event? eventItem;
+
+    protected override async Task OnInitializedAsync()
+    {
+        eventItem = await EventService.GetEventByIdAsync(Id);
+    }
+
+    private string JoinVenues()
+    {
+        var names = eventItem?.EventVenues
+            .Where(item => item.Venue is not null)
+            .Select(item => item.Venue!.VenueName)
+            .ToList() ?? new List<string>();
+
+        return names.Count == 0 ? "Not assigned" : string.Join(", ", names);
+    }
+
+    private string JoinActivities()
+    {
+        var names = eventItem?.EventActivities
+            .Where(item => item.Activity is not null)
+            .Select(item => $"{item.Activity!.ActivityName} ({item.Activity.ActivityType})")
+            .ToList() ?? new List<string>();
+
+        return names.Count == 0 ? "Not assigned" : string.Join(", ", names);
+    }
+}

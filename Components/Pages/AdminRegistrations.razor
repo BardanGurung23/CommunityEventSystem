@@ -1,4 +1,5 @@
 @page "/admin/registrations"
+@attribute [Authorize(Roles = AuthConstants.AdminRole)]
 @rendermode InteractiveServer
 @inject IRegistrationService RegistrationService
 

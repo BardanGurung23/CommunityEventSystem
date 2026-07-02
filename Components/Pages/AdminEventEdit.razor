@@ -1,0 +1,99 @@
+@page "/admin/events/edit/{Id:int}"
+@attribute [Authorize(Roles = AuthConstants.AdminRole)]
+@rendermode InteractiveServer
+@inject IEventService EventService
+@inject NavigationManager NavigationManager
+
+<PageTitle>Edit Event</PageTitle>
+
+<h1>Edit Event</h1>
+
+@if (eventModel is null)
+{
+    <div class="alert alert-warning">Event not found.</div>
+}
+else
+{
+    @if (!string.IsNullOrWhiteSpace(message))
+    {
+        <div class="alert alert-danger">@message</div>
+    }
+
+    <EditForm Model="eventModel" OnValidSubmit="SaveEvent" class="card">
+        <DataAnnotationsValidator />
+        <div class="card-body">
+            <ValidationSummary />
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label" for="eventName">Event name</label>
+                    <InputText id="eventName" class="form-control" @bind-Value="eventModel.EventName" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="eventDate">Date</label>
+                    <InputDate id="eventDate" class="form-control" @bind-Value="eventModel.EventDate" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="maxParticipants">Max participants</label>
+                    <InputNumber id="maxParticipants" class="form-control" @bind-Value="eventModel.MaxParticipants" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="startTime">Start time</label>
+                    <InputText id="startTime" class="form-control" @bind-Value="startTimeText" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="endTime">End time</label>
+                    <InputText id="endTime" class="form-control" @bind-Value="endTimeText" />
+                </div>
+                <div class="col-12">
+                    <label class="form-label" for="description">Description</label>
+                    <InputTextArea id="description" class="form-control" @bind-Value="eventModel.Description" />
+                </div>
+            </div>
+        </div>
+        <div class="card-footer bg-white">
+            <button class="btn btn-primary" type="submit">Save changes</button>
+            <a class="btn btn-outline-secondary ms-2" href="/admin/events">Cancel</a>
+        </div>
+    </EditForm>
+}
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private Event? eventModel;
+    private string startTimeText = "09:00";
+    private string endTimeText = "10:00";
+    private string message = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        eventModel = await EventService.GetEventByIdAsync(Id);
+
+        if (eventModel is not null)
+        {
+            startTimeText = eventModel.StartTime.ToString(@"hh\:mm");
+            endTimeText = eventModel.EndTime.ToString(@"hh\:mm");
+        }
+    }
+
+    private async Task SaveEvent()
+    {
+        if (eventModel is null)
+        {
+            return;
+        }
+
+        try
+        {
+            eventModel.StartTime = TimeSpan.Parse(startTimeText);
+            eventModel.EndTime = TimeSpan.Parse(endTimeText);
+            await EventService.UpdateEventAsync(eventModel);
+            NavigationManager.NavigateTo("/admin/events");
+        }
+        catch (Exception ex)
+        {
+            message = ex.Message;
+        }
+    }
+}

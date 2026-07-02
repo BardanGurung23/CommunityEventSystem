@@ -1,0 +1,42 @@
+@page "/account/login"
+
+<PageTitle>Login</PageTitle>
+
+<h1>Login</h1>
+
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="h5">Admin login</h2>
+                <form method="post" action="/account/login-admin">
+                    <div class="mb-3">
+                        <label class="form-label" for="adminEmail">Email</label>
+                        <input id="adminEmail" class="form-control" name="email" value="admin@community.test" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="adminPassword">Password</label>
+                        <input id="adminPassword" class="form-control" name="password" type="password" value="admin123" />
+                    </div>
+                    <button class="btn btn-primary" type="submit">Login as admin</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="h5">Participant login</h2>
+                <form method="post" action="/account/login-participant">
+                    <div class="mb-3">
+                        <label class="form-label" for="participantEmail">Participant email</label>
+                        <input id="participantEmail" class="form-control" name="email" />
+                    </div>
+                    <button class="btn btn-outline-primary" type="submit">Login as participant</button>
+                </form>
+                <p class="text-muted mt-3 mb-0">Create a participant first from registration if the email does not exist.</p>
+            </div>
+        </div>
+    </div>
+</div>

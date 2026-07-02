@@ -1,0 +1,49 @@
+@page "/account/register"
+@rendermode InteractiveServer
+@inject IParticipantService ParticipantService
+
+<PageTitle>Register</PageTitle>
+
+<h1>Participant Registration</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <div class="alert alert-success">@message</div>
+}
+
+<EditForm Model="participant" OnValidSubmit="RegisterParticipant" class="card">
+    <DataAnnotationsValidator />
+    <div class="card-body">
+        <ValidationSummary />
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label" for="fullName">Full name</label>
+                <InputText id="fullName" class="form-control" @bind-Value="participant.FullName" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="email">Email</label>
+                <InputText id="email" class="form-control" @bind-Value="participant.Email" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="phone">Phone</label>
+                <InputText id="phone" class="form-control" @bind-Value="participant.PhoneNumber" />
+            </div>
+        </div>
+    </div>
+    <div class="card-footer bg-white">
+        <button class="btn btn-primary" type="submit">Create account</button>
+        <a class="btn btn-outline-secondary ms-2" href="/account/login">Login</a>
+    </div>
+</EditForm>
+
+@code {
+    private Participant participant = new();
+    private string message = string.Empty;
+
+    private async Task RegisterParticipant()
+    {
+        await ParticipantService.AddParticipantAsync(participant);
+        message = "Participant account created. You can now login with your email.";
+        participant = new Participant();
+    }
+}

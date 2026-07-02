@@ -1,0 +1,64 @@
+@page "/admin/activities/edit/{Id:int}"
+@attribute [Authorize(Roles = AuthConstants.AdminRole)]
+@rendermode InteractiveServer
+@inject IActivityService ActivityService
+@inject NavigationManager NavigationManager
+
+<PageTitle>Edit Activity</PageTitle>
+
+<h1>Edit Activity</h1>
+
+@if (activity is null)
+{
+    <div class="alert alert-warning">Activity not found.</div>
+}
+else
+{
+    <EditForm Model="activity" OnValidSubmit="Save" class="card">
+        <DataAnnotationsValidator />
+        <div class="card-body">
+            <ValidationSummary />
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label" for="activityName">Activity name</label>
+                    <InputText id="activityName" class="form-control" @bind-Value="activity.ActivityName" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="activityType">Activity type</label>
+                    <InputText id="activityType" class="form-control" @bind-Value="activity.ActivityType" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="description">Description</label>
+                    <InputText id="description" class="form-control" @bind-Value="activity.Description" />
+                </div>
+            </div>
+        </div>
+        <div class="card-footer bg-white">
+            <button class="btn btn-primary" type="submit">Save changes</button>
+            <a class="btn btn-outline-secondary ms-2" href="/admin/activities">Cancel</a>
+        </div>
+    </EditForm>
+}
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private Activity? activity;
+
+    protected override async Task OnInitializedAsync()
+    {
+        activity = await ActivityService.GetActivityByIdAsync(Id);
+    }
+
+    private async Task Save()
+    {
+        if (activity is null)
+        {
+            return;
+        }
+
+        await ActivityService.UpdateActivityAsync(activity);
+        NavigationManager.NavigateTo("/admin/activities");
+    }
+}

@@ -11,11 +11,15 @@
         <label class="form-label" for="eventDate">Filter by date</label>
         <InputDate id="eventDate" class="form-control" @bind-Value="filterDate" />
     </div>
-    <div class="col-md-4">
+    <div class="col-md-3">
         <label class="form-label" for="venueName">Filter by venue</label>
         <InputText id="venueName" class="form-control" @bind-Value="venueName" />
     </div>
-    <div class="col-md-4 d-flex align-items-end gap-2">
+    <div class="col-md-3">
+        <label class="form-label" for="activityType">Filter by activity type</label>
+        <InputText id="activityType" class="form-control" @bind-Value="activityType" />
+    </div>
+    <div class="col-md-2 d-flex align-items-end gap-2">
         <button class="btn btn-primary" @onclick="ApplyFilters">Filter</button>
         <button class="btn btn-outline-secondary" @onclick="ClearFilters">Clear</button>
     </div>
@@ -56,6 +60,7 @@ else
     private List<Event>? events;
     private DateTime? filterDate;
     private string venueName = string.Empty;
+    private string activityType = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
@@ -64,6 +69,12 @@ else
 
     private async Task ApplyFilters()
     {
+        if (!string.IsNullOrWhiteSpace(activityType))
+        {
+            events = await EventService.GetEventsByActivityTypeAsync(activityType);
+            return;
+        }
+
         if (!string.IsNullOrWhiteSpace(venueName))
         {
             events = await EventService.GetEventsAsync(venueName);
@@ -83,6 +94,7 @@ else
     {
         filterDate = null;
         venueName = string.Empty;
+        activityType = string.Empty;
         events = await EventService.GetUpcomingEventsAsync();
     }
 
