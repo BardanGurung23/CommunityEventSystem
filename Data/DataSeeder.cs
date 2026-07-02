@@ -1,5 +1,6 @@
 using CommunityEvent.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
 
 namespace CommunityEvent.Data;
 
@@ -11,6 +12,21 @@ public static class DataSeeder
         var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
         await context.Database.MigrateAsync();
+
+        var passwordHasher = new PasswordHasher<Participant>();
+        var participantsWithoutPasswords = await context.Participants
+            .Where(participant => participant.PasswordHash == null)
+            .ToListAsync();
+
+        foreach (var participant in participantsWithoutPasswords)
+        {
+            participant.PasswordHash = passwordHasher.HashPassword(participant, "participant123");
+        }
+
+        if (participantsWithoutPasswords.Count > 0)
+        {
+            await context.SaveChangesAsync();
+        }
 
         if (await context.Events.AnyAsync())
         {
@@ -60,6 +76,11 @@ public static class DataSeeder
             new("Asha Gurung", "asha@example.com", "9800000001"),
             new("Sam Taylor", "sam@example.com", "9800000002")
         };
+
+        foreach (var participant in participants)
+        {
+            participant.PasswordHash = passwordHasher.HashPassword(participant, "participant123");
+        }
 
         var events = new List<Event>
         {

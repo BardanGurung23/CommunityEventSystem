@@ -4,10 +4,12 @@ using CommunityEvent.Interfaces;
 using CommunityEvent.Repositories;
 using CommunityEvent.Services;
 using CommunityEvent.Helpers;
+using CommunityEvent.Models;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -38,6 +40,7 @@ builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped<IParticipantService, ParticipantService>();
 builder.Services.AddScoped<IVenueService, VenueService>();
 builder.Services.AddScoped<IActivityService, ActivityService>();
+builder.Services.AddScoped<PasswordHasher<Participant>>();
 
 var app = builder.Build();
 
@@ -82,15 +85,22 @@ app.MapPost("/account/login-admin", async (HttpContext httpContext) =>
     return Results.Redirect("/admin/dashboard");
 });
 
-app.MapPost("/account/login-participant", async (HttpContext httpContext, AppDbContext dbContext) =>
+app.MapPost("/account/login-participant", async (HttpContext httpContext, AppDbContext dbContext, PasswordHasher<Participant> passwordHasher) =>
 {
     var form = await httpContext.Request.ReadFormAsync();
-    var email = form["email"].ToString();
+    var email = form["email"].ToString().Trim();
+    var password = form["password"].ToString();
     var participant = await dbContext.Participants.FirstOrDefaultAsync(p => p.Email == email && p.IsActive);
 
-    if (participant is null)
+    if (participant is null || string.IsNullOrWhiteSpace(participant.PasswordHash))
     {
-        return Results.Redirect("/account/login");
+        return Results.Redirect("/account/login?mode=signin&error=invalid");
+    }
+
+    var passwordResult = passwordHasher.VerifyHashedPassword(participant, participant.PasswordHash, password);
+    if (passwordResult == PasswordVerificationResult.Failed)
+    {
+        return Results.Redirect("/account/login?mode=signin&error=invalid");
     }
 
     var claims = new List<Claim>
@@ -105,6 +115,38 @@ app.MapPost("/account/login-participant", async (HttpContext httpContext, AppDbC
     await httpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity));
 
     return Results.Redirect("/my-registrations");
+});
+
+app.MapPost("/account/register-participant", async (HttpContext httpContext, AppDbContext dbContext, PasswordHasher<Participant> passwordHasher) =>
+{
+    var form = await httpContext.Request.ReadFormAsync();
+    var fullName = form["fullName"].ToString().Trim();
+    var email = form["email"].ToString().Trim();
+    var phoneNumber = form["phoneNumber"].ToString().Trim();
+    var password = form["password"].ToString();
+    var confirmPassword = form["confirmPassword"].ToString();
+
+    if (string.IsNullOrWhiteSpace(fullName) || string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password) || password != confirmPassword)
+    {
+        return Results.Redirect("/account/login?mode=signup&error=invalid");
+    }
+
+    var existingParticipant = await dbContext.Participants.FirstOrDefaultAsync(p => p.Email == email);
+    if (existingParticipant is not null)
+    {
+        return Results.Redirect("/account/login?mode=signup&error=exists");
+    }
+
+    var participant = new Participant(fullName, email, phoneNumber)
+    {
+        IsActive = true
+    };
+    participant.PasswordHash = passwordHasher.HashPassword(participant, password);
+
+    dbContext.Participants.Add(participant);
+    await dbContext.SaveChangesAsync();
+
+    return Results.Redirect("/account/login?mode=signin&success=registered");
 });
 
 app.MapGet("/account/logout", async (HttpContext httpContext) =>

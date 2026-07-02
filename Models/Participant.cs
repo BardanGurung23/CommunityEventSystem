@@ -18,6 +18,9 @@ public class Participant : User
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public bool IsActive { get; set; } = true;
 
+    [StringLength(500)]
+    public string? PasswordHash { get; set; }
+
     public ICollection<Registration> Registrations { get; set; } = new List<Registration>();
 
     [StringLength(80)]

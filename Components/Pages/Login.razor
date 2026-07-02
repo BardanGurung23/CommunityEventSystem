@@ -1,42 +1,148 @@
 @page "/account/login"
+@rendermode InteractiveServer
 
-<PageTitle>Login</PageTitle>
+<PageTitle>Account Access</PageTitle>
 
-<h1>Login</h1>
-
-<div class="row g-4">
-    <div class="col-lg-6">
-        <div class="card">
-            <div class="card-body">
-                <h2 class="h5">Admin login</h2>
-                <form method="post" action="/account/login-admin">
-                    <div class="mb-3">
-                        <label class="form-label" for="adminEmail">Email</label>
-                        <input id="adminEmail" class="form-control" name="email" value="admin@community.test" />
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label" for="adminPassword">Password</label>
-                        <input id="adminPassword" class="form-control" name="password" type="password" value="admin123" />
-                    </div>
-                    <button class="btn btn-primary" type="submit">Login as admin</button>
-                </form>
-            </div>
+<div class="auth-shell">
+    <section class="auth-card @(showSignUp ? "is-signup" : "is-signin")">
+        <div class="auth-heading">
+            <p class="eyebrow mb-2">Community Event</p>
+            <h1>@(showSignUp ? "Create Account" : "Welcome Back")</h1>
+            <p>@(showSignUp ? "Join the community and start registering for events." : "Sign in to continue managing your event registrations.")</p>
         </div>
-    </div>
 
-    <div class="col-lg-6">
-        <div class="card">
-            <div class="card-body">
-                <h2 class="h5">Participant login</h2>
-                <form method="post" action="/account/login-participant">
-                    <div class="mb-3">
-                        <label class="form-label" for="participantEmail">Participant email</label>
-                        <input id="participantEmail" class="form-control" name="email" />
-                    </div>
-                    <button class="btn btn-outline-primary" type="submit">Login as participant</button>
-                </form>
-                <p class="text-muted mt-3 mb-0">Create a participant first from registration if the email does not exist.</p>
-            </div>
+        <div class="auth-switch" role="tablist" aria-label="Account mode">
+            <span class="auth-switch-indicator"></span>
+            <button type="button" class="@(showSignUp ? string.Empty : "active")" @onclick="ShowSignIn" aria-selected="@(!showSignUp)">
+                Sign In
+            </button>
+            <button type="button" class="@(showSignUp ? "active" : string.Empty)" @onclick="ShowSignUp" aria-selected="@showSignUp">
+                Sign Up
+            </button>
         </div>
-    </div>
+
+        @if (!string.IsNullOrWhiteSpace(Message))
+        {
+            <div class="alert @AlertClass auth-alert" role="alert">@Message</div>
+        }
+
+        <div class="auth-panels">
+            <form class="auth-form sign-in-panel" method="post" action="/account/login-participant" aria-hidden="@showSignUp">
+                <label class="auth-field" for="signinEmail">
+                    <span>Email address</span>
+                    <input id="signinEmail" name="email" type="email" autocomplete="email" required />
+                </label>
+
+                <label class="auth-field" for="signinPassword">
+                    <span>Password</span>
+                    <input id="signinPassword" name="password" type="password" autocomplete="current-password" required />
+                </label>
+
+                <div class="auth-row">
+                    <label class="auth-check">
+                        <input type="checkbox" name="remember" />
+                        <span>Remember me</span>
+                    </label>
+                    <span class="auth-muted">Forgot password?</span>
+                </div>
+
+                <button class="auth-primary" type="submit">Sign In</button>
+            </form>
+
+            <form class="auth-form sign-up-panel" method="post" action="/account/register-participant" aria-hidden="@(!showSignUp)">
+                <label class="auth-field" for="signupFullName">
+                    <span>Full name</span>
+                    <input id="signupFullName" name="fullName" autocomplete="name" required />
+                </label>
+
+                <label class="auth-field" for="signupEmail">
+                    <span>Email address</span>
+                    <input id="signupEmail" name="email" type="email" autocomplete="email" required />
+                </label>
+
+                <label class="auth-field" for="signupPhone">
+                    <span>Phone number</span>
+                    <input id="signupPhone" name="phoneNumber" autocomplete="tel" />
+                </label>
+
+                <label class="auth-field" for="signupPassword">
+                    <span>Password</span>
+                    <input id="signupPassword" name="password" type="password" autocomplete="new-password" minlength="6" required />
+                </label>
+
+                <label class="auth-field" for="signupConfirmPassword">
+                    <span>Confirm password</span>
+                    <input id="signupConfirmPassword" name="confirmPassword" type="password" autocomplete="new-password" minlength="6" required />
+                </label>
+
+                <button class="auth-primary" type="submit">Create Account</button>
+            </form>
+        </div>
+
+        <div class="auth-divider">
+            <span></span>
+            <p>Admin access</p>
+            <span></span>
+        </div>
+
+        <details class="admin-login">
+            <summary>Login as administrator</summary>
+            <form method="post" action="/account/login-admin">
+                <label class="auth-field" for="adminEmail">
+                    <span>Admin email</span>
+                    <input id="adminEmail" name="email" type="email" value="admin@community.test" autocomplete="username" required />
+                </label>
+                <label class="auth-field" for="adminPassword">
+                    <span>Admin password</span>
+                    <input id="adminPassword" name="password" type="password" value="admin123" autocomplete="current-password" required />
+                </label>
+                <button class="auth-secondary" type="submit">Admin Sign In</button>
+            </form>
+        </details>
+    </section>
 </div>
+
+@code {
+    [SupplyParameterFromQuery]
+    private string? Mode { get; set; }
+
+    [SupplyParameterFromQuery]
+    private string? Error { get; set; }
+
+    [SupplyParameterFromQuery]
+    private string? Success { get; set; }
+
+    private bool showSignUp;
+
+    private string AlertClass => string.Equals(Success, "registered", StringComparison.OrdinalIgnoreCase)
+        ? "alert-success"
+        : "alert-danger";
+
+    private string? Message
+    {
+        get
+        {
+            if (string.Equals(Success, "registered", StringComparison.OrdinalIgnoreCase))
+            {
+                return "Account created successfully. Please sign in to continue.";
+            }
+
+            return Error switch
+            {
+                "invalid" when showSignUp => "Please complete the form and make sure both passwords match.",
+                "invalid" => "The email or password is incorrect.",
+                "exists" => "A participant account already exists for that email.",
+                _ => null
+            };
+        }
+    }
+
+    protected override void OnParametersSet()
+    {
+        showSignUp = string.Equals(Mode, "signup", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private void ShowSignIn() => showSignUp = false;
+
+    private void ShowSignUp() => showSignUp = true;
+}
